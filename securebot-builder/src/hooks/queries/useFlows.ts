@@ -5,24 +5,24 @@ import type { Flow } from '../../lib/validations/schemas';
 export function useFlows(botId: string | null) {
     const queryClient = useQueryClient();
 
-    const fetchFlow = useQuery({
-        queryKey: ['flow', botId],
-        queryFn: () => botId ? flowService.getByBotId(botId) : null,
+    const fetchFlows = useQuery({
+        queryKey: ['flows', botId],
+        queryFn: () => botId ? flowService.getFlowsByBotId(botId) : [],
         enabled: !!botId,
     });
 
     const saveFlowMutation = useMutation({
         mutationFn: (flow: Partial<Flow>) => flowService.saveFlow(flow),
-        onSuccess: (data: Flow) => {
-            queryClient.setQueryData(['flow', botId], data);
-            queryClient.invalidateQueries({ queryKey: ['flow', botId] });
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['flows', botId] });
         },
     });
 
     return {
-        flow: fetchFlow.data || null,
-        isLoading: fetchFlow.isLoading,
-        error: fetchFlow.error,
+        flows: fetchFlows.data || [],
+        activeFlow: fetchFlows.data?.[0] || null,
+        isLoading: fetchFlows.isLoading,
+        error: fetchFlows.error,
         saveFlow: saveFlowMutation.mutateAsync,
     };
 }

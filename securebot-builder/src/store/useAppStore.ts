@@ -19,7 +19,7 @@ export interface ChannelConfig {
 }
 
 export interface AppState {
-  currentView: 'bots' | 'tags' | 'variables' | 'agents' | 'chat';
+  currentView: 'bots' | 'tags' | 'variables' | 'agents' | 'chat' | 'flows' | 'channels';
   selectedBotId: string | null;
   showNodeProperties: boolean;
   showTestChat: boolean;
@@ -27,7 +27,7 @@ export interface AppState {
   // UI States
   isSidebarDrawerOpen: boolean;
   isSettingsOpen: boolean;
-  activeDialog: 'createAgent'|'editAgent'|'createVar'|'editVar'|'createTag'|'editTag'|'createBot'|'editBot'| null;
+  activeDialog: 'createAgent'|'editAgent'|'createVar'|'editVar'|'createTag'|'editTag'|'createBot'|'editBot'|'createFlow'|'editFlow'| null;
   isChannelConfigOpen: ChannelType | null;
   editingEntityId: string | null;
 

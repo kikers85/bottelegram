@@ -3,8 +3,10 @@ import { useBots } from '../hooks/queries/useBots';
 import { useAgents } from '../hooks/queries/useAgents';
 import { useTags } from '../hooks/queries/useTags';
 import { useVariables } from '../hooks/queries/useVariables';
+import { useChannels } from '../hooks/queries/useChannels';
+import { useFlows } from '../hooks/queries/useFlows';
 import type { ChannelType } from '../store/useAppStore';
-import type { Bot, Tag, GlobalVariable, Agent } from '../lib/validations/schemas';
+import type { Bot, Tag, GlobalVariable, Agent, Flow } from '../lib/validations/schemas';
 import { cn } from '../lib/cn';
 import React from 'react';
 import { alerts } from '../lib/alerts';
@@ -30,9 +32,11 @@ import {
 
 const navItems = [
   { id: 'bots', label: 'Bots', icon: BotIcon },
+  { id: 'flows', label: 'Flows', icon: Zap },
   { id: 'tags', label: 'Tags', icon: Tags },
   { id: 'variables', label: 'Variables', icon: VariableIcon },
   { id: 'agents', label: 'Agents', icon: Users },
+  { id: 'channels', label: 'Channels', icon: Share2 },
 ] as const;
 
 const channelItems: { id: ChannelType; label: string; icon: React.ElementType }[] = [
@@ -47,6 +51,7 @@ const channelItems: { id: ChannelType; label: string; icon: React.ElementType }[
 function BotList() {
   const { selectedBotId, setSelectedBotId, setActiveDialog } = useAppStore();
   const { bots, isLoading } = useBots();
+  const { channels } = useChannels();
 
   if (isLoading) return <div className="p-4 text-xs text-text-muted animate-pulse">Loading bots...</div>;
 
@@ -71,7 +76,11 @@ function BotList() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-text-primary truncate">{bot.name}</p>
-            <p className="text-[10px] text-text-muted uppercase">{bot.trigger_on || bot.status}</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-[10px] text-text-muted bg-surface-base px-1.5 py-0.5 rounded border border-border-light uppercase font-bold tracking-tight">
+                {channels.find(c => c.id === bot.channel_id)?.nombre || 'General'}
+              </span>
+            </div>
           </div>
           <ChevronRight className="w-4 h-4 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
         </button>
@@ -82,6 +91,39 @@ function BotList() {
       >
         <Plus className="w-4 h-4" />
         <span className="text-xs font-bold uppercase">New Bot</span>
+      </button>
+    </div>
+  );
+}
+function FlowList() {
+  const { selectedBotId, setActiveDialog } = useAppStore();
+  const { flows, isLoading } = useFlows(selectedBotId);
+
+  if (!selectedBotId) return <div className="p-4 text-xs text-text-muted">Select a bot first.</div>;
+  if (isLoading) return <div className="p-4 text-xs text-text-muted">Loading flows...</div>;
+
+  return (
+    <div className="space-y-2">
+      {flows.map((flow: Flow) => (
+        <div key={flow.id} className="w-full p-3 rounded-xl bg-white border border-border-light flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
+            <Zap className="w-4 h-4" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-text-primary">{flow.name}</p>
+            <p className="text-[10px] text-text-muted uppercase">{flow.trigger_type}</p>
+          </div>
+          <button onClick={() => setActiveDialog('editFlow', flow.id)} className="p-1.5 hover:bg-surface-hover rounded-lg">
+            <Edit className="w-3.5 h-3.5 text-text-muted" />
+          </button>
+        </div>
+      ))}
+      <button 
+        onClick={() => setActiveDialog('createFlow')}
+        className="w-full p-3 rounded-xl border-2 border-dashed border-border-strong text-text-muted hover:border-brand-400 hover:text-brand-500 transition-all flex items-center justify-center gap-2"
+      >
+        <Plus className="w-4 h-4" />
+        <span className="text-xs font-bold uppercase">New Flow</span>
       </button>
     </div>
   );
@@ -249,6 +291,7 @@ export function LeftSidebar() {
   } = useAppStore();
 
   const { bots } = useBots();
+  const { channels: dbChannels } = useChannels();
 
   return (
     <div className={cn(
@@ -307,9 +350,30 @@ export function LeftSidebar() {
         {/* Dynamic Lists */}
         <div className="p-3 border-t border-border-light min-h-[200px]">
           {currentView === 'bots' && <BotList />}
+          {currentView === 'flows' && <FlowList />}
           {currentView === 'tags' && <TagList />}
           {currentView === 'variables' && <VariableList />}
           {currentView === 'agents' && <AgentList />}
+          {currentView === 'channels' && (
+            <div className="space-y-2">
+              {dbChannels.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => setIsChannelConfigOpen(c.nombre as any)}
+                  className="w-full p-3 rounded-xl bg-white border border-border-light flex items-center gap-3 hover:border-brand-300 transition-all"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                    <Globe className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-bold text-text-primary">{c.nombre[0].toUpperCase() + c.nombre.slice(1)}</p>
+                    <p className="text-[10px] text-text-muted">{c.interfaces?.length || 0} Interfaces</p>
+                  </div>
+                  <Settings className="ml-auto w-4 h-4 text-text-muted" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Channels Integrations */}

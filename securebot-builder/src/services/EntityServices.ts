@@ -1,6 +1,6 @@
 import { SupabaseService } from './SupabaseService';
-import { AgentSchema, BotSchema, FlowSchema, TagSchema, VariableSchema } from '../lib/validations/schemas';
-import type { Agent, Bot, Flow, Tag, GlobalVariable } from '../lib/validations/schemas';
+import { AgentSchema, BotSchema, FlowSchema, TagSchema, VariableSchema, ChannelSchema } from '../lib/validations/schemas';
+import type { Agent, Bot, Flow, Tag, GlobalVariable, Channel } from '../lib/validations/schemas';
 
 // 1. Agent Service
 export class AgentService extends SupabaseService {
@@ -45,9 +45,8 @@ export class FlowService extends SupabaseService {
         return this.create<Flow>(validated);
     }
 
-    async getByBotId(botId: string): Promise<Flow | null> {
-        const flows = await this.getAll<Flow>((query) => query.eq('bot_id', botId));
-        return flows.length > 0 ? flows[0] : null;
+    async getFlowsByBotId(botId: string): Promise<Flow[]> {
+        return this.getAll<Flow>((query) => query.eq('bot_id', botId));
     }
 }
 
@@ -75,8 +74,20 @@ export class VariableService extends SupabaseService {
     }
 }
 
+// 6. Channel Service
+export class ChannelService extends SupabaseService {
+    constructor() {
+        super('canales');
+    }
+
+    async updateChannel(id: string, channel: Partial<Channel>): Promise<Channel> {
+        return this.update<Channel>(id, channel);
+    }
+}
+
 export const agentService = new AgentService();
 export const botService = new BotService();
 export const flowService = new FlowService();
 export const tagService = new TagService();
 export const variableService = new VariableService();
+export const channelService = new ChannelService();

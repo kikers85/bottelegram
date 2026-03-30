@@ -7,7 +7,11 @@ import { useVariables } from '../../hooks/queries/useVariables';
 import type { Agent, Tag, GlobalVariable, Bot } from '../../lib/validations/schemas';
 import { useAgents } from '../../hooks/queries/useAgents';
 import { useBots } from '../../hooks/queries/useBots';
+import { useChannels } from '../../hooks/queries/useChannels';
+import { useFlows } from '../../hooks/queries/useFlows';
+import { TriggerForm } from '../flows/TriggerForm';
 import { alerts } from '../../lib/alerts';
+import { Trash2 } from 'lucide-react';
 
 export function DialogManager() {
   const {
@@ -23,6 +27,8 @@ export function DialogManager() {
 
   const { agents, createAgent, updateAgent } = useAgents();
   const { bots, createBot } = useBots();
+  const { channels, updateChannel } = useChannels();
+  const { flows, saveFlow } = useFlows(selectedBotId);
   const { tags, createTag, updateTag } = useTags(selectedBotId);
   const { variables, createVariable, updateVariable } = useVariables(selectedBotId);
 
@@ -65,15 +71,27 @@ export function DialogManager() {
   };
 
   // 2. Bot Dialog (Creates new bot & clears canvas)
-  const [botForm, setBotForm] = useState({ name: '', description: '' });
+  const [botForm, setBotForm] = useState({ name: '', description: '', channel_id: '', interface_id: '' });
+  
+  // Get active interfaces for selected channel
+  const activeInterfaces = channels.find(c => c.id === botForm.channel_id)?.interfaces || [];
+
   const handleSaveBot = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!botForm.channel_id || !botForm.interface_id) {
+      alerts.error('Validation Error', 'Please select a channel and an interface.');
+      return;
+    }
+
     alerts.loading('Creating Bot', 'Initializing bot and preparing canvas...');
     try {
       await createBot({
         name: botForm.name,
         description: botForm.description,
-        owner_id: 'agent-001', // This should come from auth session in prod
+        channel_id: botForm.channel_id,
+        interface_id: botForm.interface_id,
+        flow_ids: [],
+        owner_id: '00000000-0000-0000-0000-000000000000', // Valid placeholder UUID
         status: 'draft',
         trigger_on: 'manual',
         trigger_config: {},
@@ -163,6 +181,38 @@ export function DialogManager() {
     }
   };
 
+  // 5. Flow Dialog
+  const [flowName, setFlowName] = useState('');
+  
+  useEffect(() => {
+    if (activeDialog === 'createFlow') setFlowName('');
+    else if (activeDialog === 'editFlow' && editingEntityId) {
+      const flow = flows.find(f => f.id === editingEntityId);
+      if (flow) setFlowName(flow.name);
+    }
+  }, [activeDialog, editingEntityId, flows]);
+
+  const handleSaveFlow = async (triggerConfig: any) => {
+    if (!selectedBotId) return;
+    alerts.loading('Saving Flow');
+    try {
+      const payload = {
+        bot_id: selectedBotId,
+        name: flowName || 'New Flow',
+        trigger_type: triggerConfig.type,
+        trigger_config: triggerConfig,
+        status: 'draft' as any,
+      };
+
+      await saveFlow(payload);
+      alerts.success('Flow Created', 'The flow and its trigger were saved.');
+      closeDialogs();
+    } catch (err) {
+      console.error(err);
+      alerts.error('Error', 'Could not save the flow configuration.');
+    }
+  };
+
   return (
         <>
           {/* Agent Modal */}
@@ -233,15 +283,47 @@ export function DialogManager() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">Description</label>
-                <textarea
-                  value={botForm.description}
-                  onChange={e => setBotForm({ ...botForm, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-                  placeholder="What does this bot do?"
-                  rows={3}
-                />
-              </div>
+                 <label className="block text-sm font-medium text-text-primary mb-1">Description</label>
+                 <textarea
+                   value={botForm.description}
+                   onChange={e => setBotForm({ ...botForm, description: e.target.value })}
+                   className="w-full px-3 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                   placeholder="What does this bot do?"
+                   rows={2}
+                 />
+               </div>
+
+               <div className="grid grid-cols-2 gap-4">
+                 <div>
+                   <label className="block text-sm font-medium text-text-primary mb-1">Channel</label>
+                   <select
+                     required
+                     value={botForm.channel_id}
+                     onChange={e => setBotForm({ ...botForm, channel_id: e.target.value, interface_id: '' })}
+                     className="w-full px-3 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-brand-500 outline-none bg-white"
+                   >
+                     <option value="">Select Channel</option>
+                     {channels.map(c => (
+                       <option key={c.id} value={c.id}>{c.nombre[0].toUpperCase() + c.nombre.slice(1)}</option>
+                     ))}
+                   </select>
+                 </div>
+                 <div>
+                   <label className="block text-sm font-medium text-text-primary mb-1">Interface</label>
+                   <select
+                     required
+                     disabled={!botForm.channel_id}
+                     value={botForm.interface_id}
+                     onChange={e => setBotForm({ ...botForm, interface_id: e.target.value })}
+                     className="w-full px-3 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-brand-500 outline-none bg-white disabled:bg-surface-hover"
+                   >
+                     <option value="">Select Interface</option>
+                     {activeInterfaces.map(i => (
+                       <option key={i.id} value={i.id}>{i.name}</option>
+                     ))}
+                   </select>
+                 </div>
+               </div>
               <div className="pt-4 flex justify-end gap-2">
                 <button type="button" onClick={closeDialogs} className="px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-hover border border-border-light rounded-lg">Cancel</button>
                 <button type="submit" className="btn-primary">Create Bot</button>
@@ -362,20 +444,107 @@ export function DialogManager() {
             isOpen={!!isChannelConfigOpen}
             onClose={closeDialogs}
             title={`Configure ${isChannelConfigOpen} Integration`}
+            width="max-w-xl"
           >
-            <div className="space-y-4">
-              <p className="text-sm text-text-muted">Enter credentials for {isChannelConfigOpen} to connect your bot.</p>
+            {(() => {
+              const channel = channels.find(c => c.nombre.toLowerCase() === isChannelConfigOpen?.toLowerCase());
+              if (!channel) return <div className="p-4 text-center text-text-muted">Channel not found in database.</div>;
+
+              return (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-text-muted uppercase font-bold">Connection Interfaces</p>
+                    <button 
+                      onClick={() => {
+                        const newInterfaces = [...(channel.interfaces || []), { id: `int-${Date.now()}`, name: 'New Interface', status: 'active' as const }];
+                        updateChannel({ id: channel.id!, channel: { interfaces: newInterfaces } });
+                      }}
+                      className="text-xs font-bold text-brand-600 hover:underline"
+                    >
+                      + Add Interface
+                    </button>
+                  </div>
+
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                    {(channel.interfaces || []).map((int: any) => (
+                      <div key={int.id} className="p-3 border border-border-light rounded-xl bg-surface-base space-y-2">
+                        <div className="flex items-center justify-between">
+                          <input 
+                            className="bg-transparent font-bold text-sm outline-none border-b border-transparent focus:border-brand-300"
+                            value={int.name}
+                            onChange={(e) => {
+                              const updated = channel.interfaces.map((i: any) => i.id === int.id ? { ...i, name: e.target.value } : i);
+                              updateChannel({ id: channel.id!, channel: { interfaces: updated } });
+                            }}
+                          />
+                          <button 
+                            onClick={() => {
+                              const updated = channel.interfaces.filter((i: any) => i.id !== int.id);
+                              updateChannel({ id: channel.id!, channel: { interfaces: updated } });
+                            }}
+                            className="text-status-danger hover:bg-status-dangerBg p-1 rounded"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input 
+                            placeholder="API Key / Token" 
+                            type="password"
+                            value={int.api_key || ''}
+                            onChange={(e) => {
+                              const updated = channel.interfaces.map((i: any) => i.id === int.id ? { ...i, api_key: e.target.value } : i);
+                              updateChannel({ id: channel.id!, channel: { interfaces: updated } });
+                            }}
+                            className="w-full text-[10px] p-2 border border-border-light rounded bg-white outline-none"
+                          />
+                          <input 
+                            placeholder="Webhook / URL" 
+                            value={int.url || ''}
+                            onChange={(e) => {
+                              const updated = channel.interfaces.map((i: any) => i.id === int.id ? { ...i, url: e.target.value } : i);
+                              updateChannel({ id: channel.id!, channel: { interfaces: updated } });
+                            }}
+                            className="w-full text-[10px] p-2 border border-border-light rounded bg-white outline-none"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-4 flex justify-end">
+                    <button type="button" onClick={closeDialogs} className="btn-primary">Done</button>
+                  </div>
+                </div>
+              );
+            })()}
+          </Modal>
+
+          {/* Flow Modal */}
+          <Modal
+            isOpen={activeDialog === 'createFlow' || activeDialog === 'editFlow'}
+            onClose={closeDialogs}
+            title={activeDialog === 'createFlow' ? 'Create New Flow' : 'Edit Flow'}
+            width="max-w-2xl"
+          >
+            <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">API Token / Secret</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Flow Name</label>
                 <input
-                  type="password"
-                  className="w-full px-3 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-                  placeholder="***************"
+                  required
+                  type="text"
+                  value={flowName}
+                  onChange={e => setFlowName(e.target.value)}
+                  className="w-full px-3 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
+                  placeholder="e.g. Welcome Automation"
                 />
               </div>
-              <div className="pt-4 flex justify-end gap-2">
-                <button type="button" onClick={closeDialogs} className="px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-hover border border-border-light rounded-lg">Cancel</button>
-                <button type="button" onClick={closeDialogs} className="btn-primary">Save Connection</button>
+              <div className="border-t border-border-light pt-4">
+                 <TriggerForm 
+                   initialConfig={activeDialog === 'editFlow' ? flows.find(f => f.id === editingEntityId)?.trigger_config : undefined}
+                   onSave={handleSaveFlow} 
+                   onCancel={closeDialogs} 
+                 />
               </div>
             </div>
           </Modal>
