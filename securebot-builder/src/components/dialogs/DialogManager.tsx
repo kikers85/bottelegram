@@ -7,6 +7,7 @@ import { useVariables } from '../../hooks/queries/useVariables';
 import type { Agent, Tag, GlobalVariable, Bot } from '../../lib/validations/schemas';
 import { useAgents } from '../../hooks/queries/useAgents';
 import { useBots } from '../../hooks/queries/useBots';
+import { alerts } from '../../lib/alerts';
 
 export function DialogManager() {
   const {
@@ -47,16 +48,19 @@ export function DialogManager() {
 
   const handleSaveAgent = async (e: React.FormEvent) => {
     e.preventDefault();
+    alerts.loading('Saving Agent', 'Committing changes to Supabase...');
     try {
       if (activeDialog === 'createAgent') {
         await createAgent(agentForm);
+        alerts.success('Agent Created', `${agentForm.name} added successfully.`);
       } else if (activeDialog === 'editAgent' && editingEntityId) {
         await updateAgent({ id: editingEntityId, agent: agentForm });
+        alerts.success('Agent Updated', 'Changes saved successfully.');
       }
       closeDialogs();
     } catch (err) {
       console.error('Failed to save agent:', err);
-      alert('Error saving agent. Check console.');
+      alerts.error('Error', 'Failed to save agent profile.');
     }
   };
 
@@ -64,6 +68,7 @@ export function DialogManager() {
   const [botForm, setBotForm] = useState({ name: '', description: '' });
   const handleSaveBot = async (e: React.FormEvent) => {
     e.preventDefault();
+    alerts.loading('Creating Bot', 'Initializing bot and preparing canvas...');
     try {
       await createBot({
         name: botForm.name,
@@ -90,10 +95,11 @@ export function DialogManager() {
       }]);
       onEdgesChange([]); // Clear edges
       
+      alerts.success('Bot Ready', 'Canvas initialized with welcome message.');
       closeDialogs();
     } catch (err) {
       console.error('Failed to create bot:', err);
-      alert('Error creating bot.');
+      alerts.error('Error', 'Could not create bot project.');
     }
   };
 
@@ -111,14 +117,20 @@ export function DialogManager() {
   const handleSaveTag = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedBotId) return;
+    alerts.loading('Saving Tag');
     try {
       if (activeDialog === 'createTag') {
         await createTag({ ...tagForm, bot_id: selectedBotId });
+        alerts.success('Tag Created');
       } else if (activeDialog === 'editTag' && editingEntityId) {
         await updateTag({ id: editingEntityId, tag: tagForm });
+        alerts.success('Tag Updated');
       }
       closeDialogs();
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+      console.error(err); 
+      alerts.error('Error', 'Failed to save tag.');
+    }
   };
 
   // 4. Variable Dialog
@@ -134,15 +146,21 @@ export function DialogManager() {
 
   const handleSaveVar = async (e: React.FormEvent) => {
     e.preventDefault();
+    alerts.loading('Saving Variable');
     try {
       if (activeDialog === 'createVar') {
         const payload = { ...varForm, bot_id: varForm.scope === 'bot' ? selectedBotId : null };
         await createVariable(payload);
+        alerts.success('Variable Created');
       } else if (activeDialog === 'editVar' && editingEntityId) {
         await updateVariable({ id: editingEntityId, variable: varForm });
+        alerts.success('Variable Updated');
       }
       closeDialogs();
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+      console.error(err); 
+      alerts.error('Error', 'Failed to save variable.');
+    }
   };
 
   return (

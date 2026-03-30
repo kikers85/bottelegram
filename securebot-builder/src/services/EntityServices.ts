@@ -1,6 +1,6 @@
 import { SupabaseService } from './SupabaseService';
-import { AgentSchema, BotSchema, FlowSchema } from '../lib/validations/schemas';
-import type { Agent, Bot, Flow } from '../lib/validations/schemas';
+import { AgentSchema, BotSchema, FlowSchema, TagSchema, VariableSchema } from '../lib/validations/schemas';
+import type { Agent, Bot, Flow, Tag, GlobalVariable } from '../lib/validations/schemas';
 
 // 1. Agent Service
 export class AgentService extends SupabaseService {
@@ -51,6 +51,32 @@ export class FlowService extends SupabaseService {
     }
 }
 
+// 4. Tag Service
+export class TagService extends SupabaseService {
+    constructor() {
+        super('tags');
+    }
+
+    async createTag(tag: Partial<Tag>): Promise<Tag> {
+        const validated = TagSchema.parse(tag);
+        return this.create<Tag>(validated);
+    }
+}
+
+// 5. Variable Service
+export class VariableService extends SupabaseService {
+    constructor() {
+        super('global_variables');
+    }
+
+    async createVariable(variable: Partial<GlobalVariable>): Promise<GlobalVariable> {
+        const validated = VariableSchema.parse(variable);
+        return this.create<GlobalVariable>(validated);
+    }
+}
+
 export const agentService = new AgentService();
 export const botService = new BotService();
 export const flowService = new FlowService();
+export const tagService = new TagService();
+export const variableService = new VariableService();

@@ -1,8 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { SupabaseService } from '../../services/SupabaseService';
+import { tagService } from '../../services/EntityServices';
 import type { Tag } from '../../lib/validations/schemas';
-
-const tagService = new SupabaseService('tags');
 
 export function useTags(botId: string | null) {
     const queryClient = useQueryClient();
@@ -14,7 +12,7 @@ export function useTags(botId: string | null) {
     });
 
     const createTagMutation = useMutation({
-        mutationFn: (newTag: Partial<Tag>) => tagService.create<Tag>(newTag),
+        mutationFn: (newTag: Partial<Tag>) => tagService.createTag(newTag),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tags', botId] }),
     });
 

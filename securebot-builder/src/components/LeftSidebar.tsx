@@ -7,6 +7,7 @@ import type { ChannelType } from '../store/useAppStore';
 import type { Bot, Tag, GlobalVariable, Agent } from '../lib/validations/schemas';
 import { cn } from '../lib/cn';
 import React from 'react';
+import { alerts } from '../lib/alerts';
 import {
   Bot as BotIcon,
   Tags,
@@ -111,7 +112,21 @@ function TagList() {
              <button onClick={() => setActiveDialog('editTag', tag.id)} className="p-1.5 hover:bg-surface-hover rounded-lg">
               <Edit className="w-3.5 h-3.5 text-text-muted" />
             </button>
-            <button onClick={() => deleteTag(tag.id!)} className="p-1.5 hover:bg-status-dangerBg rounded-lg">
+            <button 
+              onClick={async () => {
+                const confirmed = await alerts.confirm('Delete Tag', `Are you sure you want to delete "${tag.name}"?`);
+                if (confirmed) {
+                  alerts.loading('Deleting Tag');
+                  try {
+                    await deleteTag(tag.id!);
+                    alerts.success('Tag Deleted');
+                  } catch (err) {
+                    alerts.error('Error', 'Failed to delete tag.');
+                  }
+                }
+              }} 
+              className="p-1.5 hover:bg-status-dangerBg rounded-lg"
+            >
               <Trash2 className="w-3.5 h-3.5 text-status-danger" />
             </button>
           </div>
@@ -190,7 +205,21 @@ function AgentList() {
              <button onClick={() => setActiveDialog('editAgent', agent.id)} className="p-1.5 hover:bg-surface-hover rounded-lg">
                <Edit className="w-3.5 h-3.5 text-text-muted" />
              </button>
-             <button onClick={() => deleteAgent(agent.id!)} className="p-1.5 hover:bg-status-dangerBg rounded-lg">
+             <button 
+               onClick={async () => {
+                 const confirmed = await alerts.confirm('Delete Agent', `Are you sure you want to remove "${agent.name}"?`);
+                 if (confirmed) {
+                   alerts.loading('Removing Agent');
+                   try {
+                     await deleteAgent(agent.id!);
+                     alerts.success('Agent Removed');
+                   } catch (err) {
+                     alerts.error('Error', 'Failed to remove agent.');
+                   }
+                 }
+               }} 
+               className="p-1.5 hover:bg-status-dangerBg rounded-lg"
+             >
                <Trash2 className="w-3.5 h-3.5 text-status-danger" />
              </button>
            </div>
