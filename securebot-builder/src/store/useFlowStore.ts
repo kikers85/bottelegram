@@ -26,7 +26,6 @@ export interface FlowState {
   setEdges: (edges: Edge[]) => void;
   addNode: (type: string) => void;
   updateNodeData: (id: string, data: any) => void;
-  saveFlow: () => Promise<void>;
 }
 
 /**
@@ -34,40 +33,8 @@ export interface FlowState {
  * Handles node/edge changes and connections dynamically.
  */
 export const useFlowStore = create<FlowState>((set, get) => ({
-  nodes: [
-    {
-      id: 'trigger-1',
-      type: 'triggerNode',
-      position: { x: 50, y: 150 },
-      data: { 
-        label: 'New Member', 
-        description: 'Fires when a user joins the group.',
-        status: 'active'
-      },
-    },
-    {
-      id: 'msg-1',
-      type: 'messageNode',
-      position: { x: 400, y: 100 },
-      data: { 
-        messages: [{ id: 'm1', type: 'text', content: 'Welcome to the SecureBot Lab! 👋' }],
-        buttons: [{ id: 'b1', label: 'View Features' }, { id: 'b2', label: 'Contact Support' }],
-        status: 'active'
-      },
-    },
-    {
-      id: 'cond-1',
-      type: 'conditionNode',
-      position: { x: 750, y: 150 },
-      data: { 
-        condition: 'User is Premium?',
-      },
-    },
-  ],
-  edges: [
-    { id: 'e1-2', source: 'trigger-1', target: 'msg-1', animated: true },
-    { id: 'e2-3', source: 'msg-1', sourceHandle: 'b1', target: 'cond-1', animated: true },
-  ],
+  nodes: [],
+  edges: [],
   selectedNodeId: null,
 
   onNodesChange: (changes: NodeChange[]) => {
@@ -147,21 +114,5 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         return node;
       }),
     });
-  },
-
-  saveFlow: async () => {
-    const { nodes, edges } = get();
-    try {
-      const response = await fetch('http://localhost:3001/api/flows', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nodes, edges }),
-      });
-      if (!response.ok) throw new Error('Failed to save flow');
-      console.log('Flow published successfully to backend');
-    } catch (error) {
-      console.error('Error saving flow:', error);
-      throw error;
-    }
   },
 }));

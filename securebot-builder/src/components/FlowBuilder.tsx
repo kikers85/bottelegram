@@ -17,8 +17,10 @@ import { SidePanel } from './SidePanel';
 import { LeftSidebar } from './LeftSidebar';
 import { TestChat } from './TestChat';
 import { useAppStore } from '../store/useAppStore';
+import { useFlows } from '../hooks/queries/useFlows';
 import { cn } from '../lib/cn';
-import { Layers, Plus, Save, Zap, MessageCircle, Eye, EyeOff } from 'lucide-react';
+import { Plus, Save, Zap, MessageCircle, Eye, EyeOff, PanelLeftOpen } from 'lucide-react';
+import { useEffect } from 'react';
 
 const nodeTypes = {
   messageNode: MessageNode,
@@ -35,19 +37,47 @@ export function FlowBuilder() {
     onEdgesChange, 
     onConnect,
     addNode,
-    saveFlow
+    setNodes,
+    setEdges,
   } = useFlowStore();
   
-  const { showTestChat, setShowTestChat, showNodeProperties, setShowNodeProperties } = useAppStore();
+  const { 
+    showTestChat, 
+    setShowTestChat, 
+    showNodeProperties, 
+    setShowNodeProperties,
+    isSidebarDrawerOpen,
+    setIsSidebarDrawerOpen,
+    selectedBotId
+  } = useAppStore();
+
+  const { flow, isLoading, saveFlow } = useFlows(selectedBotId);
+
+  // Load flow data into local store when fetched
+  useEffect(() => {
+    if (flow) {
+      setNodes(flow.nodes || []);
+      setEdges(flow.edges || []);
+    }
+  }, [flow, setNodes, setEdges]);
 
   const handleSave = async () => {
+    if (!selectedBotId) return;
     try {
-      await saveFlow();
-      alert('Flow published successfully to SecureBot Engine!');
+      await saveFlow({
+        bot_id: selectedBotId,
+        nodes,
+        edges,
+        id: flow?.id
+      });
+      alert('Flow published successfully to Supabase!');
     } catch (error) {
-      alert('Failed to publish flow. Check console for details.');
+      console.error('Save error:', error);
+      alert('Failed to publish flow.');
     }
   };
+
+  if (isLoading) return <div className="w-full h-screen flex items-center justify-center bg-surface-bg text-text-muted">Loading Flow...</div>;
 
   return (
     <div className="w-full h-screen bg-surface-bg relative flex overflow-hidden">
@@ -85,31 +115,32 @@ export function FlowBuilder() {
 
             {/* Header Panel */}
             <Panel position="top-left" className="m-4">
-              <div className="glass-panel p-3 rounded-2xl flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg">
-                  <Zap className="w-5 h-5" />
-                </div>
-                <div>
-                  <h1 className="text-sm font-bold text-text-primary">SecureBot Builder</h1>
-                  <p className="text-[10px] text-text-muted font-medium uppercase tracking-widest">
-                    Alpha Engine • Multi-Channel
-                  </p>
+              <div className="flex items-center gap-3">
+                {!isSidebarDrawerOpen && (
+                  <button 
+                    onClick={() => setIsSidebarDrawerOpen(true)}
+                    className="w-11 h-11 rounded-btn bg-white border border-border-light flex items-center justify-center text-text-muted hover:text-text-primary hover:border-brand-300 shadow-sm transition-all"
+                    title="Show Sidebar"
+                  >
+                    <PanelLeftOpen className="w-5 h-5" />
+                  </button>
+                )}
+                <div className="glass-panel p-3 rounded-2xl flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg">
+                    <Zap className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h1 className="text-sm font-bold text-text-primary">SecureBot Builder</h1>
+                    <p className="text-[10px] text-text-muted font-medium uppercase tracking-widest">
+                      Alpha Engine • Multi-Channel
+                    </p>
+                  </div>
                 </div>
               </div>
             </Panel>
 
             {/* Action Panel */}
             <Panel position="top-right" className="m-4 flex items-center gap-2">
-              <button 
-                onClick={() => setShowNodeProperties(!showNodeProperties)}
-                className={cn(
-                  "w-11 h-11 rounded-btn bg-white border flex items-center justify-center transition-all shadow-sm",
-                  showNodeProperties ? "border-brand-500 text-brand-500" : "border-border-light text-text-secondary hover:text-brand-500"
-                )}
-                title="Toggle properties panel"
-              >
-                {showNodeProperties ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-              </button>
               <button 
                 onClick={() => setShowTestChat(!showTestChat)}
                 className={cn(
@@ -120,6 +151,7 @@ export function FlowBuilder() {
               >
                 <MessageCircle className="w-5 h-5" />
               </button>
+              
               <button 
                 onClick={handleSave}
                 className="btn-primary gap-2 h-11 px-5"
@@ -127,8 +159,16 @@ export function FlowBuilder() {
                 <Save className="w-4 h-4" />
                 <span>Publish</span>
               </button>
-              <button className="w-11 h-11 rounded-btn bg-white border border-border-light flex items-center justify-center text-text-secondary hover:text-brand-500 transition-all shadow-sm">
-                <Layers className="w-5 h-5" />
+              
+              <button 
+                onClick={() => setShowNodeProperties(!showNodeProperties)}
+                className={cn(
+                  "w-11 h-11 rounded-btn bg-white border flex items-center justify-center transition-all shadow-sm",
+                  showNodeProperties ? "border-brand-500 text-brand-500" : "border-border-light text-text-secondary hover:text-brand-500"
+                )}
+                title="Toggle properties panel"
+              >
+                {showNodeProperties ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
               </button>
             </Panel>
 

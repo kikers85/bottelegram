@@ -1,9 +1,16 @@
 import { useAppStore } from '../store/useAppStore';
+import { useBots } from '../hooks/queries/useBots';
+import { useAgents } from '../hooks/queries/useAgents';
+import { useTags } from '../hooks/queries/useTags';
+import { useVariables } from '../hooks/queries/useVariables';
+import type { ChannelType } from '../store/useAppStore';
+import type { Bot, Tag, GlobalVariable, Agent } from '../lib/validations/schemas';
 import { cn } from '../lib/cn';
+import React from 'react';
 import {
-  Bot,
+  Bot as BotIcon,
   Tags,
-  Variable,
+  Variable as VariableIcon,
   Users,
   Plus,
   ChevronRight,
@@ -12,26 +19,44 @@ import {
   Settings,
   Trash2,
   Edit,
+  PanelLeftClose,
+  MessageSquare,
+  Share2,
+  Globe,
+  Smartphone,
+  Video
 } from 'lucide-react';
 
 const navItems = [
-  { id: 'bots', label: 'Bots', icon: Bot },
+  { id: 'bots', label: 'Bots', icon: BotIcon },
   { id: 'tags', label: 'Tags', icon: Tags },
-  { id: 'variables', label: 'Variables', icon: Variable },
-  { id: 'admins', label: 'Admins', icon: Users },
+  { id: 'variables', label: 'Variables', icon: VariableIcon },
+  { id: 'agents', label: 'Agents', icon: Users },
 ] as const;
 
+const channelItems: { id: ChannelType; label: string; icon: React.ElementType }[] = [
+  { id: 'whatsapp', label: 'WhatsApp', icon: Smartphone },
+  { id: 'telegram', label: 'Telegram', icon: MessageSquare }, // Could use specific icons if imported
+  { id: 'instagram', label: 'Instagram', icon: Share2 },
+  { id: 'facebook', label: 'Facebook', icon: Globe },
+  { id: 'twitter', label: 'Twitter', icon: MessageCircle },
+  { id: 'tiktok', label: 'TikTok', icon: Video },
+];
+
 function BotList() {
-  const { bots, selectedBotId, setSelectedBotId } = useAppStore();
+  const { selectedBotId, setSelectedBotId, setActiveDialog } = useAppStore();
+  const { bots, isLoading } = useBots();
+
+  if (isLoading) return <div className="p-4 text-xs text-text-muted animate-pulse">Loading bots...</div>;
 
   return (
     <div className="space-y-2">
-      {bots.map((bot) => (
+      {bots.map((bot: Bot) => (
         <button
           key={bot.id}
-          onClick={() => setSelectedBotId(bot.id)}
+          onClick={() => setSelectedBotId(bot.id!)}
           className={cn(
-            'w-full p-3 rounded-xl flex items-center gap-3 transition-all text-left',
+            'w-full p-3 rounded-xl flex items-center gap-3 transition-all text-left group',
             selectedBotId === bot.id
               ? 'bg-brand-50 border-2 border-brand-500'
               : 'bg-white border border-border-light hover:border-brand-300'
@@ -45,12 +70,15 @@ function BotList() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-text-primary truncate">{bot.name}</p>
-            <p className="text-[10px] text-text-muted uppercase">{bot.triggerOn}</p>
+            <p className="text-[10px] text-text-muted uppercase">{bot.trigger_on || bot.status}</p>
           </div>
-          <ChevronRight className="w-4 h-4 text-text-muted" />
+          <ChevronRight className="w-4 h-4 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
         </button>
       ))}
-      <button className="w-full p-3 rounded-xl border-2 border-dashed border-border-strong text-text-muted hover:border-brand-400 hover:text-brand-500 transition-all flex items-center justify-center gap-2">
+      <button 
+        onClick={() => setActiveDialog('createBot')}
+        className="w-full p-3 rounded-xl border-2 border-dashed border-border-strong text-text-muted hover:border-brand-400 hover:text-brand-500 transition-all flex items-center justify-center gap-2"
+      >
         <Plus className="w-4 h-4" />
         <span className="text-xs font-bold uppercase">New Bot</span>
       </button>
@@ -59,34 +87,40 @@ function BotList() {
 }
 
 function TagList() {
-  const { tags } = useAppStore();
+  const { selectedBotId, setActiveDialog } = useAppStore();
+  const { tags, isLoading, deleteTag } = useTags(selectedBotId);
+
+  if (isLoading) return <div className="p-4 text-xs text-text-muted">Loading tags...</div>;
 
   return (
     <div className="space-y-2">
-      {tags.map((tag) => (
+      {tags.map((tag: Tag) => (
         <div
           key={tag.id}
           className="w-full p-3 rounded-xl bg-white border border-border-light flex items-center gap-3"
         >
           <div
             className="w-4 h-4 rounded-full"
-            style={{ backgroundColor: tag.color }}
+            style={{ backgroundColor: tag.color || '#ccc' }}
           />
           <div className="flex-1">
             <p className="text-sm font-bold text-text-primary">{tag.name}</p>
             <p className="text-[10px] text-text-muted">{tag.description}</p>
           </div>
           <div className="flex gap-1">
-            <button className="p-1.5 hover:bg-surface-hover rounded-lg">
+             <button onClick={() => setActiveDialog('editTag', tag.id)} className="p-1.5 hover:bg-surface-hover rounded-lg">
               <Edit className="w-3.5 h-3.5 text-text-muted" />
             </button>
-            <button className="p-1.5 hover:bg-status-dangerBg rounded-lg">
+            <button onClick={() => deleteTag(tag.id!)} className="p-1.5 hover:bg-status-dangerBg rounded-lg">
               <Trash2 className="w-3.5 h-3.5 text-status-danger" />
             </button>
           </div>
         </div>
       ))}
-      <button className="w-full p-3 rounded-xl border-2 border-dashed border-border-strong text-text-muted hover:border-brand-400 hover:text-brand-500 transition-all flex items-center justify-center gap-2">
+      <button 
+        onClick={() => setActiveDialog('createTag')}
+        className="w-full p-3 rounded-xl border-2 border-dashed border-border-strong text-text-muted hover:border-brand-400 hover:text-brand-500 transition-all flex items-center justify-center gap-2"
+      >
         <Plus className="w-4 h-4" />
         <span className="text-xs font-bold uppercase">New Tag</span>
       </button>
@@ -95,28 +129,31 @@ function TagList() {
 }
 
 function VariableList() {
-  const { globalVariables } = useAppStore();
+  const { selectedBotId, setActiveDialog } = useAppStore();
+  const { variables, isLoading } = useVariables(selectedBotId);
+
+  if (isLoading) return <div className="p-4 text-xs text-text-muted">Loading variables...</div>;
 
   return (
     <div className="space-y-2">
-      {globalVariables.map((v) => (
+      {variables.map((v: GlobalVariable) => (
         <div
           key={v.id}
           className="w-full p-3 rounded-xl bg-white border border-border-light"
         >
           <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-mono font-bold text-brand-600">{v.name}</p>
-            <span className="text-[9px] font-bold uppercase bg-surface-panel px-2 py-0.5 rounded">
+            <p className="text-sm font-mono font-bold text-brand-600 truncate mr-2">{v.name}</p>
+            <span className="text-[9px] font-bold uppercase bg-surface-panel px-2 py-0.5 rounded flex-shrink-0">
               {v.type}
             </span>
           </div>
           <p className="text-xs text-text-secondary truncate">{v.description}</p>
-          <p className="text-[10px] text-text-muted mt-1 font-mono">
-            {Array.isArray(v.value) ? v.value.join(', ') : v.value}
-          </p>
         </div>
       ))}
-      <button className="w-full p-3 rounded-xl border-2 border-dashed border-border-strong text-text-muted hover:border-brand-400 hover:text-brand-500 transition-all flex items-center justify-center gap-2">
+      <button 
+        onClick={() => setActiveDialog('createVar')}
+        className="w-full p-3 rounded-xl border-2 border-dashed border-border-strong text-text-muted hover:border-brand-400 hover:text-brand-500 transition-all flex items-center justify-center gap-2"
+      >
         <Plus className="w-4 h-4" />
         <span className="text-xs font-bold uppercase">New Variable</span>
       </button>
@@ -124,39 +161,73 @@ function VariableList() {
   );
 }
 
-function AdminList() {
-  const { admins } = useAppStore();
+function AgentList() {
+  const { setActiveDialog } = useAppStore();
+  const { agents, isLoading, deleteAgent } = useAgents();
+
+  if (isLoading) return <div className="p-4 text-xs text-text-muted">Loading agents...</div>;
 
   return (
     <div className="space-y-2">
-      {admins.map((admin) => (
+      {agents.map((agent: Agent) => (
         <div
-          key={admin.id}
-          className="w-full p-3 rounded-xl bg-white border border-border-light flex items-center gap-3"
+          key={agent.id}
+          className="w-full p-3 rounded-xl bg-white border border-border-light flex flex-col gap-2"
         >
-          <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
-            {admin.name.charAt(0).toUpperCase()}
+          <div className="flex flex-row items-center gap-3">
+             <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold shrink-0">
+               {agent.name.charAt(0).toUpperCase()}
+             </div>
+             <div className="flex-1 min-w-0">
+               <p className="text-sm font-bold text-text-primary truncate">{agent.name}</p>
+               <p className="text-[10px] text-text-muted truncate">{agent.email}</p>
+             </div>
+             <span className="text-[9px] font-bold uppercase bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded shrink-0">
+               {agent.role}
+             </span>
           </div>
-          <div className="flex-1">
-            <p className="text-sm font-bold text-text-primary">{admin.name}</p>
-            <p className="text-[10px] text-text-muted">{admin.email}</p>
-          </div>
-          <span className="text-[9px] font-bold uppercase bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded">
-            {admin.role}
-          </span>
+          <div className="flex gap-1 justify-end mt-1 pt-2 border-t border-border-light">
+             <button onClick={() => setActiveDialog('editAgent', agent.id)} className="p-1.5 hover:bg-surface-hover rounded-lg">
+               <Edit className="w-3.5 h-3.5 text-text-muted" />
+             </button>
+             <button onClick={() => deleteAgent(agent.id!)} className="p-1.5 hover:bg-status-dangerBg rounded-lg">
+               <Trash2 className="w-3.5 h-3.5 text-status-danger" />
+             </button>
+           </div>
         </div>
       ))}
+      <button 
+        onClick={() => setActiveDialog('createAgent')}
+        className="w-full p-3 rounded-xl border-2 border-dashed border-border-strong text-text-muted hover:border-brand-400 hover:text-brand-500 transition-all flex items-center justify-center gap-2"
+      >
+        <Plus className="w-4 h-4" />
+        <span className="text-xs font-bold uppercase">New Agent</span>
+      </button>
     </div>
   );
 }
 
 export function LeftSidebar() {
-  const { currentView, setCurrentView } = useAppStore();
+  const { 
+    currentView, 
+    setCurrentView, 
+    isSidebarDrawerOpen, 
+    setIsSidebarDrawerOpen,
+    setIsSettingsOpen,
+    setIsChannelConfigOpen,
+    setShowTestChat,
+    showTestChat
+  } = useAppStore();
+
+  const { bots } = useBots();
 
   return (
-    <div className="w-[280px] h-full bg-white border-r border-border-light flex flex-col">
+    <div className={cn(
+      "h-full bg-surface-panel border-r border-border-light flex flex-col transition-all duration-300 flex-shrink-0 relative z-20",
+      isSidebarDrawerOpen ? "w-[280px]" : "w-0 overflow-hidden border-r-0"
+    )}>
       {/* Logo Header */}
-      <div className="p-4 border-b border-border-light">
+      <div className="p-4 border-b border-border-light flex justify-between items-center min-w-[280px]">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg">
             <Zap className="w-5 h-5" />
@@ -166,50 +237,86 @@ export function LeftSidebar() {
             <p className="text-[9px] text-text-muted uppercase tracking-wider">Builder</p>
           </div>
         </div>
+        <button 
+          onClick={() => setIsSidebarDrawerOpen(false)}
+          className="p-2 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded-lg transition-colors"
+          title="Hide Sidebar"
+        >
+          <PanelLeftClose className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Navigation */}
-      <nav className="p-3 space-y-1">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = currentView === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setCurrentView(item.id)}
-              className={cn(
-                'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
-                isActive
-                  ? 'bg-brand-50 text-brand-600'
-                  : 'text-text-secondary hover:bg-surface-hover'
-              )}
-            >
-              <Icon className={cn('w-5 h-5', isActive ? 'text-brand-500' : 'text-text-muted')} />
-              {item.label}
-              {item.id === 'bots' && (
-                <span className="ml-auto text-[10px] bg-brand-100 text-brand-600 px-2 py-0.5 rounded-full">
-                  2
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
+      <div className="flex-1 overflow-y-auto min-w-[280px]">
+        <nav className="p-3 space-y-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentView === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setCurrentView(item.id)}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
+                  isActive
+                    ? 'bg-brand-50 text-brand-600'
+                    : 'text-text-secondary hover:bg-surface-hover'
+                )}
+              >
+                <Icon className={cn('w-5 h-5', isActive ? 'text-brand-500' : 'text-text-muted')} />
+                {item.label}
+                {item.id === 'bots' && (
+                  <span className="ml-auto text-[10px] bg-brand-100 text-brand-600 px-2 py-0.5 rounded-full">
+                    {bots.length}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
 
-      <div className="flex-1 overflow-y-auto p-3 border-t border-border-light">
-        {currentView === 'bots' && <BotList />}
-        {currentView === 'tags' && <TagList />}
-        {currentView === 'variables' && <VariableList />}
-        {currentView === 'admins' && <AdminList />}
+        {/* Dynamic Lists */}
+        <div className="p-3 border-t border-border-light min-h-[200px]">
+          {currentView === 'bots' && <BotList />}
+          {currentView === 'tags' && <TagList />}
+          {currentView === 'variables' && <VariableList />}
+          {currentView === 'agents' && <AgentList />}
+        </div>
+
+        {/* Channels Integrations */}
+        <div className="p-3 border-t border-border-light">
+          <h3 className="px-3 text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Channels</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {channelItems.map(channel => (
+              <button
+                key={channel.id}
+                onClick={() => setIsChannelConfigOpen(channel.id)}
+                className="flex items-center gap-2 p-2 rounded-lg border border-border-light hover:border-brand-300 hover:bg-brand-50 transition-all text-sm text-text-secondary hover:text-brand-600"
+              >
+                <channel.icon className="w-4 h-4" />
+                <span className="text-[11px] font-medium">{channel.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Footer Actions */}
-      <div className="p-3 border-t border-border-light space-y-1">
-        <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-hover transition-all">
-          <MessageCircle className="w-5 h-5 text-text-muted" />
+      <div className="p-3 border-t border-border-light space-y-1 min-w-[280px]">
+        <button 
+          onClick={() => setShowTestChat(!showTestChat)}
+          className={cn(
+             "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
+             showTestChat ? "bg-brand-50 text-brand-600" : "text-text-secondary hover:bg-surface-hover"
+          )}
+        >
+          <MessageCircle className={cn('w-5 h-5', showTestChat ? 'text-brand-500' : 'text-text-muted')} />
           Test Chat
         </button>
-        <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-hover transition-all">
+        <button 
+          onClick={() => setIsSettingsOpen(true)}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-hover transition-all"
+        >
           <Settings className="w-5 h-5 text-text-muted" />
           Settings
         </button>

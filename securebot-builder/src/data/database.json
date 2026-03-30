@@ -2,14 +2,14 @@
   "version": "1.0.0",
   "migratedAt": null,
   "entities": {
-    "administrators": {
-      "description": "System administrators who manage bots",
+    "agents": {
+      "description": "System agents who manage bots",
       "indexes": ["id", "email", "telegramId"],
       "data": [
         {
-          "id": "admin-001",
-          "name": "Admin User",
-          "email": "admin@securebot.io",
+          "id": "agent-001",
+          "name": "Admin Agent",
+          "email": "agent@securebot.io",
           "telegramId": "123456789",
           "role": "owner",
           "createdAt": "2024-01-01T00:00:00Z",
@@ -26,7 +26,7 @@
           "id": "bot-001",
           "name": "Welcome Bot",
           "description": "Greets new members and collects info",
-          "ownerId": "admin-001",
+          "ownerId": "agent-001",
           "status": "published",
           "triggerOn": "group_member_join",
           "triggerConfig": {
