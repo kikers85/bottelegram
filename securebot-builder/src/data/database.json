@@ -1,0 +1,255 @@
+{
+  "version": "1.0.0",
+  "migratedAt": null,
+  "entities": {
+    "administrators": {
+      "description": "System administrators who manage bots",
+      "indexes": ["id", "email", "telegramId"],
+      "data": [
+        {
+          "id": "admin-001",
+          "name": "Admin User",
+          "email": "admin@securebot.io",
+          "telegramId": "123456789",
+          "role": "owner",
+          "createdAt": "2024-01-01T00:00:00Z",
+          "lastLogin": "2024-01-15T10:30:00Z",
+          "permissions": ["read", "write", "delete", "publish"]
+        }
+      ]
+    },
+    "bots": {
+      "description": "Automation bots with triggers and flows",
+      "indexes": ["id", "name", "ownerId", "status"],
+      "data": [
+        {
+          "id": "bot-001",
+          "name": "Welcome Bot",
+          "description": "Greets new members and collects info",
+          "ownerId": "admin-001",
+          "status": "published",
+          "triggerOn": "group_member_join",
+          "triggerConfig": {
+            "chatId": "-1001234567890",
+            "filters": []
+          },
+          "createdAt": "2024-01-01T00:00:00Z",
+          "updatedAt": "2024-01-15T10:30:00Z",
+          "publishedAt": "2024-01-15T10:30:00Z",
+          "version": "1.0.0",
+          "flowId": "flow-001"
+        }
+      ]
+    },
+    "tags": {
+      "description": "User tags for segmentation",
+      "indexes": ["id", "name", "botId"],
+      "data": [
+        {
+          "id": "tag-001",
+          "name": "premium",
+          "botId": "bot-001",
+          "color": "#F59E0B",
+          "description": "Premium users",
+          "createdAt": "2024-01-01T00:00:00Z"
+        },
+        {
+          "id": "tag-002",
+          "name": "new_user",
+          "botId": "bot-001",
+          "color": "#10B981",
+          "description": "Newly registered users",
+          "createdAt": "2024-01-01T00:00:00Z"
+        },
+        {
+          "id": "tag-003",
+          "name": "Newsletter",
+          "botId": "bot-001",
+          "color": "#6366F1",
+          "description": "Subscribed to newsletter",
+          "createdAt": "2024-01-01T00:00:00Z"
+        }
+      ]
+    },
+    "globalVariables": {
+      "description": "Global variables accessible across all bots",
+      "indexes": ["id", "name"],
+      "data": [
+        {
+          "id": "var-001",
+          "name": "WELCOME_MESSAGE",
+          "value": "Welcome to our community!",
+          "type": "string",
+          "scope": "global",
+          "description": "Default welcome message",
+          "createdAt": "2024-01-01T00:00:00Z",
+          "updatedAt": "2024-01-01T00:00:00Z"
+        },
+        {
+          "id": "var-002",
+          "name": "ADMIN_IDS",
+          "value": ["123456789"],
+          "type": "string[]",
+          "scope": "global",
+          "description": "List of admin Telegram IDs",
+          "createdAt": "2024-01-01T00:00:00Z",
+          "updatedAt": "2024-01-01T00:00:00Z"
+        }
+      ]
+    },
+    "flows": {
+      "description": "Bot flow configurations with nodes and edges",
+      "indexes": ["id", "botId", "status"],
+      "data": [
+        {
+          "id": "flow-001",
+          "botId": "bot-001",
+          "name": "Welcome Flow",
+          "status": "published",
+          "nodes": [
+            {
+              "id": "trigger-1",
+              "type": "triggerNode",
+              "position": { "x": 50, "y": 150 },
+              "data": {
+                "label": "New Member",
+                "description": "Fires when a user joins the group.",
+                "triggerOn": "group_member_join",
+                "status": "active"
+              }
+            },
+            {
+              "id": "msg-1",
+              "type": "messageNode",
+              "position": { "x": 400, "y": 100 },
+              "data": {
+                "id": "msg-1",
+                "label": "Send Message",
+                "messages": [
+                  { "id": "m1", "type": "text", "content": "Welcome to the SecureBot Lab!" }
+                ],
+                "buttons": [
+                  { "id": "b1", "label": "View Features" },
+                  { "id": "b2", "label": "Contact Support" }
+                ],
+                "status": "active"
+              }
+            },
+            {
+              "id": "cond-1",
+              "type": "conditionNode",
+              "position": { "x": 750, "y": 150 },
+              "data": {
+                "id": "cond-1",
+                "label": "Condition",
+                "condition": "user.isPremium",
+                "status": "active"
+              }
+            }
+          ],
+          "edges": [
+            { "id": "e1-2", "source": "trigger-1", "target": "msg-1", "animated": true },
+            { "id": "e2-3", "source": "msg-1", "sourceHandle": "b1", "target": "cond-1", "animated": true }
+          ],
+          "version": "1.0.0",
+          "createdAt": "2024-01-01T00:00:00Z",
+          "updatedAt": "2024-01-15T10:30:00Z"
+        }
+      ]
+    },
+    "botReferences": {
+      "description": "References between bots, actions, and messages",
+      "indexes": ["id", "sourceBotId", "targetBotId"],
+      "data": []
+    },
+    "chatLogs": {
+      "description": "Chat interaction logs for testing and debugging",
+      "indexes": ["id", "botId", "userId", "timestamp"],
+      "data": []
+    }
+  },
+  "actionTypes": {
+    "assignTag": {
+      "name": "Assign Tag",
+      "properties": {
+        "tagName": {
+          "type": "string",
+          "required": true,
+          "description": "Name of the tag to assign"
+        }
+      }
+    },
+    "removeTag": {
+      "name": "Remove Tag",
+      "properties": {
+        "tagName": {
+          "type": "string",
+          "required": true,
+          "description": "Name of the tag to remove"
+        }
+      }
+    },
+    "assignVariable": {
+      "name": "Assign Variable",
+      "properties": {
+        "variableName": {
+          "type": "string",
+          "required": true,
+          "description": "Name of the variable"
+        },
+        "variableValue": {
+          "type": "string",
+          "required": true,
+          "description": "Value to assign"
+        },
+        "variableType": {
+          "type": "enum",
+          "values": ["string", "string[]"],
+          "required": true,
+          "description": "Type of the variable"
+        }
+      }
+    },
+    "externalApi": {
+      "name": "External API",
+      "properties": {
+        "name": { "type": "string", "required": true },
+        "url": { "type": "string", "required": true },
+        "method": { "type": "enum", "values": ["GET", "POST", "DELETE", "UPDATE", "CREATE"] },
+        "responseType": { "type": "enum", "values": ["string", "string[]", "object"] },
+        "responseVariable": { "type": "string" },
+        "bodyJson": { "type": "string" }
+      }
+    }
+  },
+  "triggerTypes": {
+    "group_member_join": {
+      "name": "Group Member Joined",
+      "description": "Triggers when a user joins a group"
+    },
+    "group_member_leave": {
+      "name": "Group Member Left",
+      "description": "Triggers when a user leaves a group"
+    },
+    "button_click": {
+      "name": "Button Clicked",
+      "description": "Triggers when a user clicks a button"
+    },
+    "command": {
+      "name": "Command Received",
+      "description": "Triggers when a specific command is sent"
+    },
+    "keyword": {
+      "name": "Keyword Detected",
+      "description": "Triggers when a specific keyword is detected"
+    },
+    "scheduled": {
+      "name": "Scheduled",
+      "description": "Triggers on a schedule"
+    },
+    "bot_reference": {
+      "name": "Bot Reference",
+      "description": "Triggered by another bot"
+    }
+  }
+}

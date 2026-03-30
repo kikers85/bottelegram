@@ -1,0 +1,132 @@
+[
+  {
+    "id": 1774884606400,
+    "nodes": [
+      {
+        "id": "trigger-1",
+        "type": "triggerNode",
+        "position": {
+          "x": 16.75841874084921,
+          "y": 59.551976573938504
+        },
+        "data": {
+          "label": "New Member",
+          "description": "Fires when a user joins the group.",
+          "status": "active"
+        },
+        "width": 260,
+        "height": 148,
+        "selected": false,
+        "dragging": false,
+        "positionAbsolute": {
+          "x": 16.75841874084921,
+          "y": 59.551976573938504
+        }
+      },
+      {
+        "id": "msg-1",
+        "type": "messageNode",
+        "position": {
+          "x": 315.7364568081991,
+          "y": 80.67349926793558
+        },
+        "data": {
+          "messages": [
+            {
+              "id": "m1",
+              "type": "text",
+              "content": "Welcome to the SecureBot Lab! 👋"
+            }
+          ],
+          "buttons": [
+            {
+              "id": "b1",
+              "label": "View Features"
+            },
+            {
+              "id": "b2",
+              "label": "Contact Support"
+            }
+          ],
+          "status": "active"
+        },
+        "width": 280,
+        "height": 294,
+        "selected": false,
+        "positionAbsolute": {
+          "x": 315.7364568081991,
+          "y": 80.67349926793558
+        },
+        "dragging": false
+      },
+      {
+        "id": "cond-1",
+        "type": "conditionNode",
+        "position": {
+          "x": 646.4099560761348,
+          "y": 129.900439238653
+        },
+        "data": {
+          "condition": "User is Premium?"
+        },
+        "width": 260,
+        "height": 224,
+        "selected": false,
+        "positionAbsolute": {
+          "x": 646.4099560761348,
+          "y": 129.900439238653
+        },
+        "dragging": false
+      },
+      {
+        "id": "actionNode-1774884491118",
+        "type": "actionNode",
+        "position": {
+          "x": 980.5708782593932,
+          "y": 116.39595988759825
+        },
+        "data": {
+          "id": "actionNo",
+          "label": "Action",
+          "action": "",
+          "status": "draft"
+        },
+        "width": 240,
+        "height": 132,
+        "selected": true,
+        "positionAbsolute": {
+          "x": 980.5708782593932,
+          "y": 116.39595988759825
+        },
+        "dragging": false
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1-2",
+        "source": "trigger-1",
+        "target": "msg-1",
+        "animated": true
+      },
+      {
+        "id": "e2-3",
+        "source": "msg-1",
+        "sourceHandle": "b1",
+        "target": "cond-1",
+        "animated": true
+      },
+      {
+        "animated": true,
+        "style": {
+          "stroke": "#6366F1",
+          "strokeWidth": 2
+        },
+        "source": "cond-1",
+        "sourceHandle": "true",
+        "target": "actionNode-1774884491118",
+        "targetHandle": null,
+        "id": "reactflow__edge-cond-1true-actionNode-1774884491118"
+      }
+    ]
+  }
+]
