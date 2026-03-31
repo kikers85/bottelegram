@@ -26,6 +26,11 @@ export interface FlowState {
   setEdges: (edges: Edge[]) => void;
   addNode: (type: string) => void;
   updateNodeData: (id: string, data: any) => void;
+  viewport: { x: number; y: number; zoom: number };
+  setViewport: (viewport: { x: number; y: number; zoom: number }) => void;
+  isNewFlow: boolean;
+  setIsNewFlow: (is: boolean) => void;
+  resetFlow: () => void;
 }
 
 /**
@@ -36,6 +41,8 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   nodes: [],
   edges: [],
   selectedNodeId: null,
+  viewport: { x: 0, y: 0, zoom: 0.2 },
+  isNewFlow: false,
 
   onNodesChange: (changes: NodeChange[]) => {
     set({
@@ -71,6 +78,18 @@ export const useFlowStore = create<FlowState>((set, get) => ({
 
   setEdges: (edges: Edge[]) => set({ edges }),
 
+  setViewport: (viewport) => set({ viewport }),
+
+  setIsNewFlow: (isNewFlow) => set({ isNewFlow }),
+
+  resetFlow: () => set({ 
+    nodes: [], 
+    edges: [], 
+    selectedNodeId: null, 
+    viewport: { x: 0, y: 0, zoom: 0.2 },
+    isNewFlow: true 
+  }),
+
   addNode: (type) => {
     const id = `${type}-${Date.now()}`;
     const nodeId = id.slice(0, 8);
@@ -102,7 +121,12 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         status: 'draft',
       },
     };
-    set({ nodes: [...get().nodes, newNode] });
+    
+    const isNew = get().nodes.length === 0;
+    set({ 
+      nodes: [...get().nodes, newNode],
+      isNewFlow: isNew ? true : get().isNewFlow
+    });
   },
 
   updateNodeData: (id, data) => {

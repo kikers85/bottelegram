@@ -5,10 +5,8 @@ import { useTags } from '../hooks/queries/useTags';
 import { useVariables } from '../hooks/queries/useVariables';
 import { useChannels } from '../hooks/queries/useChannels';
 import { useFlows } from '../hooks/queries/useFlows';
-import type { ChannelType } from '../store/useAppStore';
 import type { Bot, Tag, GlobalVariable, Agent, Flow } from '../lib/validations/schemas';
 import { cn } from '../lib/cn';
-import React from 'react';
 import { alerts } from '../lib/alerts';
 import {
   Bot as BotIcon,
@@ -23,11 +21,8 @@ import {
   Trash2,
   Edit,
   PanelLeftClose,
-  MessageSquare,
   Share2,
   Globe,
-  Smartphone,
-  Video
 } from 'lucide-react';
 
 const navItems = [
@@ -39,14 +34,6 @@ const navItems = [
   { id: 'channels', label: 'Channels', icon: Share2 },
 ] as const;
 
-const channelItems: { id: ChannelType; label: string; icon: React.ElementType }[] = [
-  { id: 'whatsapp', label: 'WhatsApp', icon: Smartphone },
-  { id: 'telegram', label: 'Telegram', icon: MessageSquare }, // Could use specific icons if imported
-  { id: 'instagram', label: 'Instagram', icon: Share2 },
-  { id: 'facebook', label: 'Facebook', icon: Globe },
-  { id: 'twitter', label: 'Twitter', icon: MessageCircle },
-  { id: 'tiktok', label: 'TikTok', icon: Video },
-];
 
 function BotList() {
   const { selectedBotId, setSelectedBotId, setActiveDialog } = useAppStore();
@@ -118,16 +105,9 @@ function FlowList() {
           </button>
         </div>
       ))}
-      <button 
-        onClick={() => setActiveDialog('createFlow')}
-        className="w-full p-3 rounded-xl border-2 border-dashed border-border-strong text-text-muted hover:border-brand-400 hover:text-brand-500 transition-all flex items-center justify-center gap-2"
-      >
-        <Plus className="w-4 h-4" />
-        <span className="text-xs font-bold uppercase">New Flow</span>
-      </button>
-    </div>
-  );
-}
+      </div>
+    );
+  }
 
 function TagList() {
   const { selectedBotId, setActiveDialog } = useAppStore();
@@ -376,22 +356,6 @@ export function LeftSidebar() {
           )}
         </div>
 
-        {/* Channels Integrations */}
-        <div className="p-3 border-t border-border-light">
-          <h3 className="px-3 text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Channels</h3>
-          <div className="grid grid-cols-2 gap-2">
-            {channelItems.map(channel => (
-              <button
-                key={channel.id}
-                onClick={() => setIsChannelConfigOpen(channel.id)}
-                className="flex items-center gap-2 p-2 rounded-lg border border-border-light hover:border-brand-300 hover:bg-brand-50 transition-all text-sm text-text-secondary hover:text-brand-600"
-              >
-                <channel.icon className="w-4 h-4" />
-                <span className="text-[11px] font-medium">{channel.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* Footer Actions */}

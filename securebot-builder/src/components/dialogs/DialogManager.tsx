@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useFlowStore } from '../../store/useFlowStore';
 import { Modal } from './Modal';
 import { useTags } from '../../hooks/queries/useTags';
@@ -24,6 +25,8 @@ export function DialogManager() {
     editingEntityId,
     selectedBotId,
   } = useAppStore();
+
+  const { session } = useAuthStore();
 
   const { agents, createAgent, updateAgent } = useAgents();
   const { bots, createBot } = useBots();
@@ -91,7 +94,7 @@ export function DialogManager() {
         channel_id: botForm.channel_id,
         interface_id: botForm.interface_id,
         flow_ids: [],
-        owner_id: '00000000-0000-0000-0000-000000000000', // Valid placeholder UUID
+        owner_id: session?.user?.id || '00000000-0000-0000-0000-000000000000',
         status: 'draft',
         trigger_on: 'manual',
         trigger_config: {},

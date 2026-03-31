@@ -1,9 +1,12 @@
+import React, { useEffect } from 'react';
 import ReactFlow, {
   Background,
   Controls,
   MiniMap,
   BackgroundVariant,
   Panel,
+  ReactFlowProvider,
+  useReactFlow,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useFlowStore } from '../store/useFlowStore';
@@ -20,7 +23,6 @@ import { useAppStore } from '../store/useAppStore';
 import { useFlows } from '../hooks/queries/useFlows';
 import { cn } from '../lib/cn';
 import { Plus, Save, Zap, MessageCircle, Eye, EyeOff, PanelLeftOpen } from 'lucide-react';
-import { useEffect } from 'react';
 
 const nodeTypes = {
   messageNode: MessageNode,
@@ -30,6 +32,15 @@ const nodeTypes = {
 };
 
 export function FlowBuilder() {
+  return (
+    <ReactFlowProvider>
+      <FlowBuilderInner />
+    </ReactFlowProvider>
+  );
+}
+
+function FlowBuilderInner() {
+  const { setViewport, getViewport } = useReactFlow();
   const { 
     nodes, 
     edges, 
@@ -39,6 +50,8 @@ export function FlowBuilder() {
     addNode,
     setNodes,
     setEdges,
+    setIsNewFlow,
+    isNewFlow,
   } = useFlowStore();
   
   const { 
@@ -48,34 +61,50 @@ export function FlowBuilder() {
     setShowNodeProperties,
     isSidebarDrawerOpen,
     setIsSidebarDrawerOpen,
-    selectedBotId
+    selectedBotId,
+    setActiveDialog
   } = useAppStore();
 
-  const { flow, isLoading, saveFlow } = useFlows(selectedBotId);
+  const { activeFlow, isLoading, saveFlow } = useFlows(selectedBotId);
 
   // Load flow data into local store when fetched
   useEffect(() => {
-    if (flow) {
-      setNodes(flow.nodes || []);
-      setEdges(flow.edges || []);
+    if (activeFlow) {
+      setNodes(activeFlow.nodes || []);
+      setEdges(activeFlow.edges || []);
+      setIsNewFlow(false);
+    } else {
+      setNodes([]);
+      setEdges([]);
+      setIsNewFlow(true);
     }
-  }, [flow, setNodes, setEdges]);
+  }, [activeFlow, setNodes, setEdges, setIsNewFlow]);
 
-  const handleSave = async () => {
+  const handleSaveFlow = async (status: 'draft' | 'published' | 'archived') => {
     if (!selectedBotId) return;
+
+    if (isNewFlow && !activeFlow) {
+      setActiveDialog('createFlow');
+      return;
+    }
+
     try {
       await saveFlow({
         bot_id: selectedBotId,
         nodes,
         edges,
-        id: flow?.id
+        id: activeFlow?.id,
+        status: status as any
       });
-      alert('Flow published successfully to Supabase!');
+      alert(`Flow ${status} successfully!`);
     } catch (error) {
       console.error('Save error:', error);
-      alert('Failed to publish flow.');
+      alert('Failed to save flow.');
     }
   };
+
+  const zoomLevels = [0.1, 0.2, 0.5, 1, 2];
+  const currentZoom = getViewport().zoom;
 
   if (isLoading) return <div className="w-full h-screen flex items-center justify-center bg-surface-bg text-text-muted">Loading Flow...</div>;
 
@@ -94,7 +123,9 @@ export function FlowBuilder() {
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             nodeTypes={nodeTypes}
-            fitView
+            defaultViewport={{ x: 0, y: 0, zoom: 0.2 }}
+            minZoom={0.1}
+            maxZoom={4}
             className="bg-dot-pattern"
             defaultEdgeOptions={{
               animated: true,
@@ -151,12 +182,20 @@ export function FlowBuilder() {
               >
                 <MessageCircle className="w-5 h-5" />
               </button>
-              
+
               <button 
-                onClick={handleSave}
-                className="btn-primary gap-2 h-11 px-5"
+                onClick={() => handleSaveFlow('draft')}
+                className="btn-secondary gap-2 h-11 px-4 text-xs"
               >
                 <Save className="w-4 h-4" />
+                <span>Save Draft</span>
+              </button>
+
+              <button 
+                onClick={() => handleSaveFlow('published')}
+                className="btn-primary gap-2 h-11 px-5"
+              >
+                <Zap className="w-4 h-4" />
                 <span>Publish</span>
               </button>
               
@@ -170,6 +209,26 @@ export function FlowBuilder() {
               >
                 {showNodeProperties ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
               </button>
+            </Panel>
+
+            {/* Zoom Selector Panel */}
+            <Panel position="bottom-right" className="m-4">
+              <div className="glass-panel p-1 rounded-xl flex items-center gap-1 shadow-lg bg-white/80 border border-white/40">
+                {zoomLevels.map((level) => (
+                  <button
+                    key={level}
+                    onClick={() => setViewport({ x: 0, y: 0, zoom: level }, { duration: 400 })}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all",
+                      Math.round(currentZoom * 100) === Math.round(level * 100)
+                        ? "bg-brand-500 text-white shadow-sm"
+                        : "text-text-muted hover:bg-slate-100"
+                    )}
+                  >
+                    {Math.round(level * 100)}%
+                  </button>
+                ))}
+              </div>
             </Panel>
 
             {/* Floating Toolbox */}

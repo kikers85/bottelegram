@@ -15,6 +15,18 @@ export const AgentSchema = z.object({
 
 export type Agent = z.infer<typeof AgentSchema>;
 
+// 1.1 User Profile Schema (Public Users Table)
+export const UserSchema = z.object({
+  id: z.string().uuid(),
+  email: z.string().email(),
+  full_name: z.string().nullable().optional(),
+  role: z.enum(['admin', 'agent']).default('agent'),
+  created_at: z.string().optional(),
+  updated_at: z.string().optional(),
+});
+
+export type UserProfile = z.infer<typeof UserSchema>;
+
 // 2. Channel & Interface Schemas
 export const InterfaceSchema = z.object({
   id: z.string(),
