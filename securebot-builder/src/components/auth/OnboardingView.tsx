@@ -12,14 +12,14 @@ export function OnboardingView() {
 
   const handleCompleteSetup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName) return alerts.error('Error', 'Please enter your full name.');
+    if (!fullName) return alerts.error('Error', 'Por favor, ingresa tu nombre completo.');
 
     setIsSubmitting(true);
     try {
       await updateProfile({ full_name: fullName, role });
-      alerts.success('Setup Complete', 'Your professional profile is ready.');
+      alerts.success('Configuración Completada', 'Tu perfil profesional está listo.');
     } catch (err: any) {
-      alerts.error('Setup Failed', err.message || 'Could not complete profile.');
+      alerts.error('Error en la Configuración', err.message || 'No se pudo completar el perfil.');
     } finally {
       setIsSubmitting(false);
     }
@@ -32,14 +32,14 @@ export function OnboardingView() {
           <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-100 shadow-sm">
             <User className="w-8 h-8 text-indigo-600" />
           </div>
-          <h2 className="text-3xl font-bold text-text-primary">Complete Your Profile</h2>
-          <p className="text-text-muted mt-2">Define your identity as a bot workspace member.</p>
+          <h2 className="text-3xl font-bold text-text-primary">Completa tu Perfil</h2>
+          <p className="text-text-muted mt-2">Define tu identidad como miembro del espacio de trabajo.</p>
         </div>
 
         <form onSubmit={handleCompleteSetup} className="space-y-8 text-left">
-          {/* Role Selection */}
+          {/* Selección de Rol */}
           <div className="space-y-4">
-            <label className="block text-xs font-bold text-text-muted uppercase ml-1">Select Your Professional Role</label>
+            <label className="block text-xs font-bold text-text-muted uppercase ml-1">Selecciona tu Rol Profesional</label>
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
@@ -54,8 +54,8 @@ export function OnboardingView() {
                 <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-4 shadow-sm", role === 'admin' ? "bg-brand-500 text-white" : "bg-white text-text-muted")}>
                   <Shield className="w-6 h-6" />
                 </div>
-                <div className="font-bold text-text-primary mb-1">Administrator</div>
-                <p className="text-[10px] text-text-muted leading-tight">Full access to billing, agents, and workspace settings.</p>
+                <div className="font-bold text-text-primary mb-1">Administrador</div>
+                <p className="text-[10px] text-text-muted leading-tight">Acceso total a facturación, agentes y ajustes del espacio.</p>
                 {role === 'admin' && <div className="absolute top-4 right-4 w-5 h-5 bg-brand-500 rounded-full flex items-center justify-center"><Check className="w-3 h-3 text-white" /></div>}
               </button>
 
@@ -72,23 +72,23 @@ export function OnboardingView() {
                 <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-4 shadow-sm", role === 'agent' ? "bg-indigo-600 text-white" : "bg-white text-text-muted")}>
                   <Users className="w-6 h-6" />
                 </div>
-                <div className="font-bold text-text-primary mb-1">Agent</div>
-                <p className="text-[10px] text-text-muted leading-tight">Build and manage bots, flows, and interact with customers.</p>
+                <div className="font-bold text-text-primary mb-1">Agente</div>
+                <p className="text-[10px] text-text-muted leading-tight">Crea y gestiona bots, flujos e interactúa con los clientes.</p>
                 {role === 'agent' && <div className="absolute top-4 right-4 w-5 h-5 bg-indigo-600 rounded-full flex items-center justify-center"><Check className="w-3 h-3 text-white" /></div>}
               </button>
             </div>
           </div>
 
-          {/* Full Name */}
+          {/* Nombre Completo */}
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-text-muted uppercase mb-2 ml-1">What's your full name?</label>
+              <label className="block text-xs font-bold text-text-muted uppercase mb-2 ml-1">¿Cuál es tu nombre completo?</label>
               <input
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="w-full px-5 py-4 bg-slate-50 border border-border-light rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none text-sm transition-all"
-                placeholder="Tony Stark"
+                placeholder="ej. Juan Pérez"
                 required
               />
             </div>
@@ -103,7 +103,7 @@ export function OnboardingView() {
               <Loader2 className="w-6 h-6 animate-spin" />
             ) : (
               <>
-                <span className="font-bold">Finish Professional Setup</span>
+                <span className="font-bold">Finalizar Configuración Profesional</span>
                 <Check className="w-5 h-5 transition-transform group-hover:scale-110" />
               </>
             )}

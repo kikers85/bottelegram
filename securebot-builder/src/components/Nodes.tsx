@@ -35,7 +35,7 @@ export const MessageNode = memo(({ data, selected, id }: NodeProps<MessageNodeDa
             <MessageSquare className="w-3.5 h-3.5" />
           </div>
           <span className="text-[10px] font-bold uppercase tracking-wider text-brand-900">
-            Send Message
+            Enviar Mensaje
           </span>
         </div>
         <MoreVertical className="w-4 h-4 text-brand-400 cursor-pointer hover:text-brand-600 transition-colors" />
@@ -46,7 +46,7 @@ export const MessageNode = memo(({ data, selected, id }: NodeProps<MessageNodeDa
           <div key={msg.id} className="relative group/msg">
             <div className="bg-surface-bg rounded-xl p-3 text-sm text-text-primary leading-relaxed border border-border-light group-hover/msg:border-brand-200 transition-colors">
               {msg.type === 'text' ? (
-                <p>{msg.content || 'Type your message here...'}</p>
+                <p>{msg.content || 'Escribe tu mensaje aquí...'}</p>
               ) : (
                 <div className="flex items-center justify-center h-20 bg-surface-hover rounded-lg border-2 border-dashed border-border-light">
                   <ImageIcon className="w-6 h-6 text-text-muted" />
@@ -73,7 +73,7 @@ export const MessageNode = memo(({ data, selected, id }: NodeProps<MessageNodeDa
           
           <button className="w-full py-2 border border-dashed border-border-strong text-text-muted text-[10px] font-bold uppercase rounded-xl hover:bg-surface-hover transition-colors flex items-center justify-center gap-2">
             <Plus className="w-3 h-3" />
-            Add Button
+            Añadir Botón
           </button>
         </div>
       </div>
@@ -106,21 +106,21 @@ export const ConditionNode = memo(({ data, selected, id }: NodeProps<{ id?: stri
             <Filter className="w-3.5 h-3.5" />
           </div>
           <span className="text-[10px] font-bold uppercase tracking-wider text-status-warning">
-            Condition
+            Condición
           </span>
         </div>
       </div>
       <div className="p-4 bg-white space-y-3">
         <div className="text-xs font-semibold text-text-primary px-3 py-2 bg-surface-bg rounded-lg border border-border-light">
-          {data.condition || 'Add a condition logic...'}
+          {data.condition || 'Añade una lógica de condición...'}
         </div>
         <div className="space-y-2">
           <div className="relative flex items-center justify-between px-3 py-2 bg-status-successBg rounded-lg border border-status-success/20">
-            <span className="text-[10px] font-bold text-status-success uppercase">True</span>
+            <span className="text-[10px] font-bold text-status-success uppercase">Verdadero</span>
             <Handle type="source" position={Position.Right} id="true" className="!w-3 !h-3 !-right-1.5 !bg-status-success !border-2 !border-white" />
           </div>
           <div className="relative flex items-center justify-between px-3 py-2 bg-status-dangerBg rounded-lg border border-status-danger/20">
-            <span className="text-[10px] font-bold text-status-danger uppercase">False</span>
+            <span className="text-[10px] font-bold text-status-danger uppercase">Falso</span>
             <Handle type="source" position={Position.Right} id="false" className="!w-3 !h-3 !-right-1.5 !bg-status-danger !border-2 !border-white" />
           </div>
         </div>
@@ -166,7 +166,7 @@ export const ActionNode = memo(({ data, selected, id }: NodeProps<ActionNodeData
             <Zap className="w-3.5 h-3.5" />
           </div>
           <span className="text-[10px] font-bold uppercase tracking-wider text-brand-900">
-            Action
+            Acción
           </span>
         </div>
         {isExternalApi && (
@@ -178,11 +178,11 @@ export const ActionNode = memo(({ data, selected, id }: NodeProps<ActionNodeData
           <div className="space-y-2">
             <div className="text-sm font-bold text-text-primary flex items-center gap-2">
               <Globe className="w-4 h-4 text-brand-500" />
-              {data.externalApi.name || 'External API'}
+              {data.externalApi.name || 'API Externa'}
             </div>
             <div className="text-xs text-text-secondary bg-surface-bg p-2 rounded-lg border border-border-light">
               <span className="font-semibold">{data.externalApi.method}</span>
-              <span className="ml-2 truncate">{data.externalApi.url || 'No URL configured'}</span>
+              <span className="ml-2 truncate">{data.externalApi.url || 'Sin URL configurada'}</span>
             </div>
             {data.externalApi.response_variable && (
               <div className="text-[10px] text-text-muted">
@@ -193,7 +193,7 @@ export const ActionNode = memo(({ data, selected, id }: NodeProps<ActionNodeData
         ) : (
           <div className="mt-2 text-sm font-bold text-text-primary flex items-center gap-2">
             <Shield className="w-4 h-4 text-brand-500" />
-            {data.action || 'Assign Tag...'}
+            {data.action || 'Asignar Etiqueta...'}
           </div>
         )}
       </div>
@@ -220,7 +220,7 @@ export const TriggerNode = memo(({ data, selected, id }: NodeProps<{ id?: string
             <Sparkles className="w-3.5 h-3.5" />
           </div>
           <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-100">
-            Trigger
+            Disparador
           </span>
         </div>
         <div className="flex gap-1.5">
@@ -230,10 +230,10 @@ export const TriggerNode = memo(({ data, selected, id }: NodeProps<{ id?: string
       </div>
       <div className="p-4 bg-white">
         <div className="text-sm font-bold text-text-primary">
-          {data.label || 'Group Joined'}
+          {data.label || 'Unido al Grupo'}
         </div>
         <div className="mt-1 text-xs text-text-secondary leading-snug">
-          {data.description || 'Automation starts when...'}
+          {data.description || 'La automatización inicia cuando...'}
         </div>
       </div>
       <div className="px-3 py-1.5 bg-indigo-50 border-t flex items-center justify-end">

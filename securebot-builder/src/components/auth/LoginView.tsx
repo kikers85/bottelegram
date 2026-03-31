@@ -15,15 +15,15 @@ export function LoginView({ onSwitchToRegister }: LoginViewProps) {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return alerts.error('Error', 'Please fill in all fields.');
+    if (!email || !password) return alerts.error('Error', 'Por favor, completa todos los campos.');
 
     setIsSubmitting(true);
     try {
       const { error } = await signIn(email, password);
       if (error) throw error;
-      alerts.success('Welcome Back!', 'Login successful.');
+      alerts.success('¡Bienvenido de nuevo!', 'Inicio de sesión exitoso.');
     } catch (err: any) {
-      alerts.error('Login Failed', err.message || 'Invalid credentials.');
+      alerts.error('Error al Iniciar Sesión', err.message || 'Credenciales inválidas.');
     } finally {
       setIsSubmitting(false);
     }
@@ -36,14 +36,14 @@ export function LoginView({ onSwitchToRegister }: LoginViewProps) {
           <div className="w-16 h-16 bg-brand-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-200">
             <Zap className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-3xl font-bold text-text-primary">Welcome Back</h2>
-          <p className="text-text-muted mt-2">Log in to manage your multibot empire.</p>
+          <h2 className="text-3xl font-bold text-text-primary">Bienvenido de nuevo</h2>
+          <p className="text-text-muted mt-2">Inicia sesión para gestionar tu imperio de bots.</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-text-muted uppercase mb-1.5 ml-1">Email Address</label>
+              <label className="block text-xs font-bold text-text-muted uppercase mb-1.5 ml-1">Correo Electrónico</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                 <input
@@ -57,7 +57,7 @@ export function LoginView({ onSwitchToRegister }: LoginViewProps) {
               </div>
             </div>
             <div>
-              <label className="block text-xs font-bold text-text-muted uppercase mb-1.5 ml-1">Password</label>
+              <label className="block text-xs font-bold text-text-muted uppercase mb-1.5 ml-1">Contraseña</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                 <input
@@ -79,9 +79,9 @@ export function LoginView({ onSwitchToRegister }: LoginViewProps) {
           >
             {isSubmitting ? (
               <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
+             ) : (
               <>
-                <span>Sign In</span>
+                <span>Iniciar Sesión</span>
                 <Zap className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </>
             )}
@@ -90,12 +90,12 @@ export function LoginView({ onSwitchToRegister }: LoginViewProps) {
 
         <div className="text-center pt-2">
           <p className="text-sm text-text-muted">
-            Don't have an account?{' '}
+            ¿No tienes una cuenta?{' '}
             <button
               onClick={onSwitchToRegister}
               className="text-brand-600 font-bold hover:underline"
             >
-              Sign Up
+              Regístrate
             </button>
           </p>
         </div>

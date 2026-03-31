@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { type ChatMessage } from '../lib/validations/schemas';
+
+export interface ChatMessage {
+  id: string;
+  role: 'bot' | 'user';
+  content: string;
+  timestamp: string;
+}
 
 export type ChannelType = 'whatsapp' | 'instagram' | 'facebook' | 'telegram' | 'tiktok' | 'twitter';
 

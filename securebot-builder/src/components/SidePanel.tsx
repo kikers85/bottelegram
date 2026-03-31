@@ -1,5 +1,7 @@
 import { useFlowStore } from '../store/useFlowStore';
 import { useAppStore } from '../store/useAppStore';
+import { useTags } from '../hooks/queries/useTags';
+import { useVariables } from '../hooks/queries/useVariables';
 import { cn } from '../lib/cn';
 import { 
   X, MessageSquare, Filter, Zap, 
@@ -20,8 +22,10 @@ interface ExternalAPIAction {
  * Dynamic property editor for the selected node in the flow.
  */
 export function SidePanel() {
+  const { selectedBotId } = useAppStore();
   const { nodes, selectedNodeId, updateNodeData, setSelectedNodeId } = useFlowStore();
-  const { tags, globalVariables } = useAppStore();
+  const { tags } = useTags(selectedBotId!);
+  const { variables: globalVariables } = useVariables(selectedBotId!);
   
   const selectedNode = nodes.find(n => n.id === selectedNodeId);
 
@@ -57,7 +61,7 @@ export function SidePanel() {
         <div className="flex items-center gap-2">
           <Settings className="w-4 h-4 text-brand-500" />
           <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider">
-            Node Properties
+            Propiedades del Nodo
           </h2>
         </div>
         <button 
@@ -82,12 +86,13 @@ export function SidePanel() {
               {selectedNode.type === 'messageNode' && <MessageSquare className="w-6 h-6" />}
               {selectedNode.type === 'conditionNode' && <Filter className="w-6 h-6" />}
               {selectedNode.type === 'actionNode' && <Zap className="w-6 h-6" />}
+              {selectedNode.type === 'triggerNode' && <Zap className="w-6 h-6" />}
             </div>
             <div>
               <h3 className="text-lg font-bold text-text-primary capitalize">
-                {selectedNode.type?.replace('Node', '')} Step
+                Paso de {selectedNode.type === 'triggerNode' ? 'Disparador' : selectedNode.type?.replace('Node', '').replace('message', 'Mensaje').replace('condition', 'Condición').replace('action', 'Acción')}
               </h3>
-              <p className="text-xs text-text-muted font-medium">Node ID: {selectedNode.id}</p>
+              <p className="text-xs text-text-muted font-medium">ID del Nodo: {selectedNode.id}</p>
             </div>
           </div>
 
@@ -96,7 +101,7 @@ export function SidePanel() {
             {selectedNode.type === 'messageNode' && (
                 <div className="space-y-4">
                   <label className="text-xs font-bold text-text-secondary uppercase tracking-widest">
-                    Message Text
+                    Texto del Mensaje
                   </label>
                   <textarea 
                     className="w-full min-h-[120px] p-3 rounded-xl border border-border-light bg-surface-bg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
@@ -108,7 +113,7 @@ export function SidePanel() {
                         : [{ id: `m-${Date.now()}`, type: 'text', content: e.target.value }];
                       updateNodeData(selectedNode.id, { messages: newMessages });
                     }}
-                    placeholder="Enter your bot message..."
+                    placeholder="Escribe el mensaje del bot..."
                   />
                 </div>
               )}
@@ -116,17 +121,17 @@ export function SidePanel() {
               {selectedNode.type === 'conditionNode' && (
                 <div className="space-y-4">
                   <label className="text-xs font-bold text-text-secondary uppercase tracking-widest">
-                    Execution Logic
+                    Lógica de Ejecución
                   </label>
                   <input 
                     type="text"
                     className="w-full p-3 rounded-xl border border-border-light bg-surface-bg text-sm focus:ring-2 focus:ring-brand-500"
                     value={selectedNode.data.condition || ''}
                     onChange={(e) => updateNodeData(selectedNode.id, { condition: e.target.value })}
-                    placeholder="e.g. user.status === 'premium'"
+                    placeholder="ej. usuario.status === 'premium'"
                   />
                   <div className="p-3 bg-surface-panel rounded-xl border border-border-light text-[10px] text-text-muted leading-relaxed">
-                    Condition branching will evaluate this logic and traverse via the Success (True) or Failure (False) handle.
+                    La ramificación evaluará esta lógica y avanzará por el camino de Éxito (True) o Fallo (False).
                   </div>
                 </div>
               )}
@@ -134,21 +139,21 @@ export function SidePanel() {
               {selectedNode.type === 'actionNode' && (
                 <div className="space-y-4">
                   <label className="text-xs font-bold text-text-secondary uppercase tracking-widest">
-                    Action Type
+                    Tipo de Acción
                   </label>
                   <select 
                     className="w-full p-3 rounded-xl border border-border-light bg-surface-bg text-sm focus:ring-2 focus:ring-brand-500"
                     value={selectedNode.data.action || ''}
                     onChange={(e) => handleActionTypeChange(e.target.value)}
                   >
-                    <option value="">Select an action...</option>
-                    <option value="Assign Tag">Assign Tag</option>
-                    <option value="Remove Tag">Remove Tag</option>
-                    <option value="Assign Variable">Assign Variable</option>
-                    <option value="Remove Variable">Remove Variable</option>
-                    <option value="External Webhook">External Webhook</option>
-                    <option value="External API">External API</option>
-                    <option value="Notify Admin">Notify Admin</option>
+                    <option value="">Selecciona una acción...</option>
+                    <option value="Assign Tag">Asignar Etiqueta</option>
+                    <option value="Remove Tag">Remover Etiqueta</option>
+                    <option value="Assign Variable">Asignar Variable</option>
+                    <option value="Remove Variable">Remover Variable</option>
+                    <option value="External Webhook">Webhook Externo</option>
+                    <option value="External API">API Externa</option>
+                    <option value="Notify Admin">Notificar Admin</option>
                   </select>
 
                   {/* Assign/Remove Tag Name Field */}
@@ -156,14 +161,14 @@ export function SidePanel() {
                     <div className="space-y-3">
                       <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
                         <Tag className="w-3 h-3 inline mr-1" />
-                        Tag Name
+                        Nombre de Etiqueta
                       </label>
                       <select 
                         className="w-full p-2.5 rounded-lg border border-border-light bg-white text-sm focus:ring-2 focus:ring-brand-500"
                         value={selectedNode.data.tagName || ''}
                         onChange={(e) => updateNodeData(selectedNode.id, { tagName: e.target.value })}
                       >
-                        <option value="">Select a tag...</option>
+                        <option value="">Selecciona una etiqueta...</option>
                         {tags.map(tag => (
                           <option key={tag.id} value={tag.name}>{tag.name}</option>
                         ))}
@@ -173,7 +178,7 @@ export function SidePanel() {
                         className="w-full p-2.5 rounded-lg border border-border-light bg-white text-sm focus:ring-2 focus:ring-brand-500"
                         value={selectedNode.data.tagName || ''}
                         onChange={(e) => updateNodeData(selectedNode.id, { tagName: e.target.value })}
-                        placeholder="Or type tag name..."
+                        placeholder="O escribe el nombre..."
                       />
                     </div>
                   )}
@@ -184,13 +189,13 @@ export function SidePanel() {
                       <div className="flex items-center gap-2 pb-2 border-b border-border-light">
                         <Variable className="w-4 h-4 text-indigo-500" />
                         <span className="text-xs font-bold text-text-secondary uppercase">
-                          Variable Configuration
+                          Configuración de Variable
                         </span>
                       </div>
                       
                       <div>
                         <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
-                          Variable Name
+                          Nombre de Variable
                         </label>
                         <select 
                           className="w-full p-2.5 rounded-lg border border-border-light bg-white text-sm focus:ring-2 focus:ring-brand-500"
@@ -199,7 +204,7 @@ export function SidePanel() {
                             variableAction: { ...selectedNode.data.variableAction!, variableName: e.target.value }
                           })}
                         >
-                          <option value="">Select a variable...</option>
+                          <option value="">Selecciona una variable...</option>
                           {globalVariables.map(v => (
                             <option key={v.id} value={v.name}>{v.name}</option>
                           ))}
@@ -208,7 +213,7 @@ export function SidePanel() {
 
                       <div>
                         <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
-                          Variable Type
+                          Tipo de Variable
                         </label>
                         <select 
                           className="w-full p-2.5 rounded-lg border border-border-light bg-white text-sm focus:ring-2 focus:ring-brand-500"
@@ -217,15 +222,15 @@ export function SidePanel() {
                             variableAction: { ...selectedNode.data.variableAction!, variableType: e.target.value }
                           })}
                         >
-                          <option value="string">String</option>
-                          <option value="string[]">String Array</option>
+                          <option value="string">Cadena (String)</option>
+                          <option value="string[]">Lista (String Array)</option>
                         </select>
                       </div>
 
                       {selectedNode.data.action === 'Assign Variable' && (
                         <div>
                           <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
-                            Value
+                            Valor
                           </label>
                           {selectedNode.data.variableAction?.variableType === 'string[]' ? (
                             <input 
@@ -235,7 +240,7 @@ export function SidePanel() {
                               onChange={(e) => updateNodeData(selectedNode.id, { 
                                 variableAction: { ...selectedNode.data.variableAction!, variableValue: e.target.value.split(',').map(s => s.trim()) }
                               })}
-                              placeholder="value1, value2, value3..."
+                              placeholder="valor1, valor2, valor3..."
                             />
                           ) : (
                             <input 
@@ -245,7 +250,7 @@ export function SidePanel() {
                               onChange={(e) => updateNodeData(selectedNode.id, { 
                                 variableAction: { ...selectedNode.data.variableAction!, variableValue: e.target.value }
                               })}
-                              placeholder="Enter value..."
+                              placeholder="Ingresar valor..."
                             />
                           )}
                         </div>
@@ -258,14 +263,14 @@ export function SidePanel() {
                       <div className="flex items-center gap-2 pb-2 border-b border-border-light">
                         <Globe className="w-4 h-4 text-brand-500" />
                         <span className="text-xs font-bold text-text-secondary uppercase">
-                          External API Configuration
+                          Configuración de API Externa
                         </span>
                       </div>
                       
                       <div className="space-y-3">
                         <div>
                           <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
-                            Action Name
+                            Nombre de Acción
                           </label>
                           <input 
                             type="text"
@@ -274,13 +279,13 @@ export function SidePanel() {
                             onChange={(e) => updateNodeData(selectedNode.id, { 
                               externalApi: { ...selectedNode.data.externalApi!, name: e.target.value }
                             })}
-                            placeholder="e.g., Get User Data"
+                            placeholder="ej., Obtener datos de usuario"
                           />
                         </div>
 
                         <div>
                           <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
-                            HTTP Method
+                            Método HTTP
                           </label>
                           <select 
                             className="w-full p-2.5 rounded-lg border border-border-light bg-white text-sm focus:ring-2 focus:ring-brand-500"
@@ -314,7 +319,7 @@ export function SidePanel() {
 
                         <div>
                           <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
-                            Response Type
+                            Tipo de Respuesta
                           </label>
                           <select 
                             className="w-full p-2.5 rounded-lg border border-border-light bg-white text-sm focus:ring-2 focus:ring-brand-500"
@@ -331,7 +336,7 @@ export function SidePanel() {
 
                         <div>
                           <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
-                            Response Variable Name
+                            Nombre de Variable de Respuesta
                           </label>
                           <input 
                             type="text"
@@ -340,7 +345,7 @@ export function SidePanel() {
                             onChange={(e) => updateNodeData(selectedNode.id, { 
                               externalApi: { ...selectedNode.data.externalApi!, response_variable: e.target.value }
                             })}
-                            placeholder="e.g., userData, apiResponse"
+                            placeholder="ej., datosUsuario, respuestaApi"
                           />
                         </div>
 
@@ -349,7 +354,7 @@ export function SidePanel() {
                           selectedNode.data.externalApi?.method === 'UPDATE') && (
                           <div>
                             <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
-                              Request Body (JSON)
+                              Cuerpo de la Solicitud (JSON)
                             </label>
                             <textarea 
                               className="w-full min-h-[100px] p-2.5 rounded-lg border border-border-light bg-white text-sm focus:ring-2 focus:ring-brand-500 font-mono"
@@ -374,7 +379,7 @@ export function SidePanel() {
       <div className="p-6 border-t bg-surface-panel/30 flex items-center gap-3">
         <button className="flex-1 btn-primary gap-2 h-11">
           <Save className="w-4 h-4" />
-          <span>Save Changes</span>
+          <span>Guardar Cambios</span>
         </button>
         <button className="w-11 h-11 rounded-btn border border-status-danger/20 flex items-center justify-center text-status-danger hover:bg-status-dangerBg transition-colors">
           <Trash2 className="w-5 h-5" />

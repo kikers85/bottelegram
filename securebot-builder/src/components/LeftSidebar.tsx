@@ -27,11 +27,11 @@ import {
 
 const navItems = [
   { id: 'bots', label: 'Bots', icon: BotIcon },
-  { id: 'flows', label: 'Flows', icon: Zap },
-  { id: 'tags', label: 'Tags', icon: Tags },
+  { id: 'flows', label: 'Flujos', icon: Zap },
+  { id: 'tags', label: 'Etiquetas', icon: Tags },
   { id: 'variables', label: 'Variables', icon: VariableIcon },
-  { id: 'agents', label: 'Agents', icon: Users },
-  { id: 'channels', label: 'Channels', icon: Share2 },
+  { id: 'agents', label: 'Agentes', icon: Users },
+  { id: 'channels', label: 'Canales', icon: Share2 },
 ] as const;
 
 
@@ -40,7 +40,7 @@ function BotList() {
   const { bots, isLoading } = useBots();
   const { channels } = useChannels();
 
-  if (isLoading) return <div className="p-4 text-xs text-text-muted animate-pulse">Loading bots...</div>;
+  if (isLoading) return <div className="p-4 text-xs text-text-muted animate-pulse">Cargando bots...</div>;
 
   return (
     <div className="space-y-2">
@@ -77,7 +77,7 @@ function BotList() {
         className="w-full p-3 rounded-xl border-2 border-dashed border-border-strong text-text-muted hover:border-brand-400 hover:text-brand-500 transition-all flex items-center justify-center gap-2"
       >
         <Plus className="w-4 h-4" />
-        <span className="text-xs font-bold uppercase">New Bot</span>
+        <span className="text-xs font-bold uppercase">Nuevo Bot</span>
       </button>
     </div>
   );
@@ -86,7 +86,7 @@ function FlowList() {
   const { selectedFlowId, setSelectedFlowId, setActiveDialog } = useAppStore();
   const { flows, isLoading } = useFlows(); // Fetch all flows
 
-  if (isLoading) return <div className="p-4 text-xs text-text-muted">Loading flows...</div>;
+  if (isLoading) return <div className="p-4 text-xs text-text-muted">Cargando flujos...</div>;
 
   return (
     <div className="space-y-2">
@@ -121,7 +121,7 @@ function FlowList() {
         className="w-full p-3 rounded-xl border-2 border-dashed border-border-strong text-text-muted hover:border-brand-400 hover:text-brand-500 transition-all flex items-center justify-center gap-2"
       >
         <Plus className="w-4 h-4" />
-        <span className="text-xs font-bold uppercase">New Flow</span>
+        <span className="text-xs font-bold uppercase">Nuevo Flujo</span>
       </button>
       </div>
     );
@@ -131,7 +131,7 @@ function TagList() {
   const { selectedBotId, setActiveDialog } = useAppStore();
   const { tags, isLoading, deleteTag } = useTags(selectedBotId);
 
-  if (isLoading) return <div className="p-4 text-xs text-text-muted">Loading tags...</div>;
+  if (isLoading) return <div className="p-4 text-xs text-text-muted">Cargando etiquetas...</div>;
 
   return (
     <div className="space-y-2">
@@ -154,14 +154,14 @@ function TagList() {
             </button>
             <button 
               onClick={async () => {
-                const confirmed = await alerts.confirm('Delete Tag', `Are you sure you want to delete "${tag.name}"?`);
+                const confirmed = await alerts.confirm('Eliminar Etiqueta', `¿Estás seguro de que deseas eliminar la etiqueta "${tag.name}"?`);
                 if (confirmed) {
-                  alerts.loading('Deleting Tag');
+                  alerts.loading('Eliminando Etiqueta');
                   try {
                     await deleteTag(tag.id!);
-                    alerts.success('Tag Deleted');
+                    alerts.success('Etiqueta Eliminada');
                   } catch (err) {
-                    alerts.error('Error', 'Failed to delete tag.');
+                    alerts.error('Error', 'No se pudo eliminar la etiqueta.');
                   }
                 }
               }} 
@@ -177,7 +177,7 @@ function TagList() {
         className="w-full p-3 rounded-xl border-2 border-dashed border-border-strong text-text-muted hover:border-brand-400 hover:text-brand-500 transition-all flex items-center justify-center gap-2"
       >
         <Plus className="w-4 h-4" />
-        <span className="text-xs font-bold uppercase">New Tag</span>
+        <span className="text-xs font-bold uppercase">Nueva Etiqueta</span>
       </button>
     </div>
   );
@@ -187,7 +187,7 @@ function VariableList() {
   const { selectedBotId, setActiveDialog } = useAppStore();
   const { variables, isLoading } = useVariables(selectedBotId);
 
-  if (isLoading) return <div className="p-4 text-xs text-text-muted">Loading variables...</div>;
+  if (isLoading) return <div className="p-4 text-xs text-text-muted">Cargando variables...</div>;
 
   return (
     <div className="space-y-2">
@@ -210,7 +210,7 @@ function VariableList() {
         className="w-full p-3 rounded-xl border-2 border-dashed border-border-strong text-text-muted hover:border-brand-400 hover:text-brand-500 transition-all flex items-center justify-center gap-2"
       >
         <Plus className="w-4 h-4" />
-        <span className="text-xs font-bold uppercase">New Variable</span>
+        <span className="text-xs font-bold uppercase">Nueva Variable</span>
       </button>
     </div>
   );
@@ -220,7 +220,7 @@ function AgentList() {
   const { setActiveDialog } = useAppStore();
   const { agents, isLoading, deleteAgent } = useAgents();
 
-  if (isLoading) return <div className="p-4 text-xs text-text-muted">Loading agents...</div>;
+  if (isLoading) return <div className="p-4 text-xs text-text-muted">Cargando agentes...</div>;
 
   return (
     <div className="space-y-2">
@@ -247,16 +247,16 @@ function AgentList() {
              </button>
              <button 
                onClick={async () => {
-                 const confirmed = await alerts.confirm('Delete Agent', `Are you sure you want to remove "${agent.name}"?`);
-                 if (confirmed) {
-                   alerts.loading('Removing Agent');
-                   try {
-                     await deleteAgent(agent.id!);
-                     alerts.success('Agent Removed');
-                   } catch (err) {
-                     alerts.error('Error', 'Failed to remove agent.');
-                   }
-                 }
+                 const confirmed = await alerts.confirm('Eliminar Agente', `¿Estás seguro de que deseas eliminar a "${agent.name}"?`);
+                if (confirmed) {
+                  alerts.loading('Eliminando Agente');
+                  try {
+                    await deleteAgent(agent.id!);
+                    alerts.success('Agente Eliminado');
+                  } catch (err) {
+                    alerts.error('Error', 'No se pudo eliminar el agente.');
+                  }
+                }
                }} 
                className="p-1.5 hover:bg-status-dangerBg rounded-lg"
              >
@@ -270,7 +270,7 @@ function AgentList() {
         className="w-full p-3 rounded-xl border-2 border-dashed border-border-strong text-text-muted hover:border-brand-400 hover:text-brand-500 transition-all flex items-center justify-center gap-2"
       >
         <Plus className="w-4 h-4" />
-        <span className="text-xs font-bold uppercase">New Agent</span>
+        <span className="text-xs font-bold uppercase">Nuevo Agente</span>
       </button>
     </div>
   );
@@ -310,7 +310,7 @@ export function LeftSidebar() {
         <button 
           onClick={() => setIsSidebarDrawerOpen(false)}
           className="p-2 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded-lg transition-colors"
-          title="Hide Sidebar"
+          title="Ocultar Sidebar"
         >
           <PanelLeftClose className="w-5 h-5" />
         </button>
@@ -386,14 +386,14 @@ export function LeftSidebar() {
           )}
         >
           <MessageCircle className={cn('w-5 h-5', showTestChat ? 'text-brand-500' : 'text-text-muted')} />
-          Test Chat
+          Probar Chat
         </button>
         <button 
           onClick={() => setIsSettingsOpen(true)}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-hover transition-all"
         >
           <Settings className="w-5 h-5 text-text-muted" />
-          Settings
+          Ajustes
         </button>
       </div>
     </div>

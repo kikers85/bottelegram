@@ -62,7 +62,8 @@ export const alerts = {
       showCancelButton: true,
       confirmButtonColor: '#4f46e5',
       cancelButtonColor: '#334155',
-      confirmButtonText: 'Yes, proceed',
+      confirmButtonText: 'Sí, continuar',
+      cancelButtonText: 'Cancelar',
       background: '#1e293b',
       color: '#f8fafc',
       customClass: {
@@ -77,7 +78,7 @@ export const alerts = {
   /**
    * Loading State
    */
-  loading: (title: string, text: string = 'Please wait...') => {
+  loading: (title: string, text: string = 'Por favor, espere...') => {
     Swal.fire({
       title,
       text,

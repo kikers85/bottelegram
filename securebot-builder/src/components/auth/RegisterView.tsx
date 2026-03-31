@@ -16,18 +16,18 @@ export function RegisterView({ onSwitchToLogin }: RegisterViewProps) {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || !confirmPassword) return alerts.error('Error', 'Please fill in all fields.');
-    if (password !== confirmPassword) return alerts.error('Mismatch', 'Passwords do not match.');
+    if (!email || !password || !confirmPassword) return alerts.error('Error', 'Por favor, completa todos los campos.');
+    if (password !== confirmPassword) return alerts.error('Error', 'Las contraseñas no coinciden.');
 
     setIsSubmitting(true);
     try {
       const { user, error } = await signUp(email, password);
       if (error) throw error;
       if (user) {
-        alerts.success('Account Created', 'Check your email for confirmation or proceed to setup.');
+        alerts.success('Cuenta Creada', 'Revisa tu correo para confirmación o procede a la configuración.');
       }
     } catch (err: any) {
-      alerts.error('Registration Failed', err.message || 'Could not create account.');
+      alerts.error('Error al Registrarse', err.message || 'No se pudo crear la cuenta.');
     } finally {
       setIsSubmitting(false);
     }
@@ -40,13 +40,13 @@ export function RegisterView({ onSwitchToLogin }: RegisterViewProps) {
           <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-100">
             <UserPlus className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-3xl font-bold text-text-primary">Create Account</h2>
-          <p className="text-text-muted mt-2">Start your journey as a bot architect.</p>
+          <h2 className="text-3xl font-bold text-text-primary">Crear Cuenta</h2>
+          <p className="text-text-muted mt-2">Comienza tu viaje como arquitecto de bots.</p>
         </div>
 
         <form onSubmit={handleRegister} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-text-muted uppercase mb-1.5 ml-1">Email Address</label>
+            <label className="block text-xs font-bold text-text-muted uppercase mb-1.5 ml-1">Correo Electrónico</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
               <input
@@ -60,7 +60,7 @@ export function RegisterView({ onSwitchToLogin }: RegisterViewProps) {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-bold text-text-muted uppercase mb-1.5 ml-1">Password</label>
+            <label className="block text-xs font-bold text-text-muted uppercase mb-1.5 ml-1">Contraseña</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
               <input
@@ -74,7 +74,7 @@ export function RegisterView({ onSwitchToLogin }: RegisterViewProps) {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-bold text-text-muted uppercase mb-1.5 ml-1">Confirm Password</label>
+            <label className="block text-xs font-bold text-text-muted uppercase mb-1.5 ml-1">Confirmar Contraseña</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
               <input
@@ -97,7 +97,7 @@ export function RegisterView({ onSwitchToLogin }: RegisterViewProps) {
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <>
-                <span>Sign Up</span>
+                <span>Registrarse</span>
                 <Zap className="w-4 h-4" />
               </>
             )}
@@ -106,12 +106,12 @@ export function RegisterView({ onSwitchToLogin }: RegisterViewProps) {
 
         <div className="text-center pt-2">
           <p className="text-sm text-text-muted">
-            Already have an account?{' '}
+            ¿Ya tienes una cuenta?{' '}
             <button
               onClick={onSwitchToLogin}
               className="text-indigo-600 font-bold hover:underline"
             >
-              Log In
+              Iniciar Sesión
             </button>
           </p>
         </div>

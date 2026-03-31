@@ -53,35 +53,43 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   initialize: async () => {
     if (get().initialized) return;
 
-    const { data: { session } } = await supabase.auth.getSession();
-    set({ session, isLoading: !!session });
-
-    if (session) {
-      const { data: profile } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-      
-      set({ user: profile, isLoading: false });
-    } else {
-      set({ isLoading: false });
-    }
-
-    supabase.auth.onAuthStateChange(async (_event, session) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
       set({ session, isLoading: !!session });
+
       if (session) {
-         const { data: profile } = await supabase
+        const { data: profile } = await supabase
           .from('users')
           .select('*')
           .eq('id', session.user.id)
           .single();
-        set({ user: profile, isLoading: false });
-      } else {
-        set({ user: null, isLoading: false });
+        
+        set({ user: profile });
       }
-    });
+    } catch (err) {
+      console.error('Initialization error:', err);
+    } finally {
+      set({ isLoading: false, initialized: true });
+    }
 
-    set({ initialized: true });
+    supabase.auth.onAuthStateChange(async (_event, session) => {
+      // Don't set loading true on auth state change to avoid flickers
+      set({ session });
+      if (session) {
+         try {
+           const { data: profile } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          set({ user: profile });
+         } catch (e) {
+           console.error('Profile fetch error:', e);
+         }
+      } else {
+        set({ user: null });
+      }
+      set({ isLoading: false });
+    });
   }
 }));

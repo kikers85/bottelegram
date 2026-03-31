@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useFlowStore } from '../../store/useFlowStore';
@@ -15,27 +15,23 @@ import { alerts } from '../../lib/alerts';
 import { Trash2 } from 'lucide-react';
 
 export function DialogManager() {
-  const {
-    activeDialog,
-    isChannelConfigOpen,
-    isSettingsOpen,
-    setActiveDialog,
-    setIsChannelConfigOpen,
-    setIsSettingsOpen,
-    editingEntityId,
-    selectedBotId,
-  } = useAppStore();
-
-  const { session } = useAuthStore();
+  const { setActiveDialog, isChannelConfigOpen, setIsChannelConfigOpen, isSettingsOpen, setIsSettingsOpen, selectedBotId, editingEntityId, activeDialog } = useAppStore();
+  const { session, signOut } = useAuthStore();
 
   const { agents, createAgent, updateAgent } = useAgents();
-  const { bots, createBot } = useBots();
+  const { createBot } = useBots();
   const { channels, updateChannel } = useChannels();
   const { flows, saveFlow } = useFlows();
   const { tags, createTag, updateTag } = useTags(selectedBotId);
   const { variables, createVariable, updateVariable } = useVariables(selectedBotId);
 
-  const { onEdgesChange, setNodes } = useFlowStore();
+  const { setNodes, onEdgesChange } = useFlowStore();
+  const prevDialogRef = useRef<string | null>(null);
+
+  // Sync ref with activeDialog
+  useEffect(() => {
+    prevDialogRef.current = activeDialog;
+  }, [activeDialog]);
 
   const closeDialogs = () => {
     setActiveDialog(null);
@@ -47,6 +43,8 @@ export function DialogManager() {
   const [agentForm, setAgentForm] = useState<Partial<Agent>>({ name: '', email: '', role: 'editor', permissions: [] });
 
   useEffect(() => {
+    if (activeDialog === prevDialogRef.current) return; // Only run on dialog change
+
     if (activeDialog === 'editAgent' && editingEntityId) {
       const existing = agents.find((a: Agent) => a.id === editingEntityId);
       if (existing) setAgentForm(existing);
@@ -57,19 +55,19 @@ export function DialogManager() {
 
   const handleSaveAgent = async (e: React.FormEvent) => {
     e.preventDefault();
-    alerts.loading('Saving Agent', 'Committing changes to Supabase...');
+    alerts.loading('Guardando Agente', 'Sincronizando cambios con la base de datos...');
     try {
       if (activeDialog === 'createAgent') {
         await createAgent(agentForm);
-        alerts.success('Agent Created', `${agentForm.name} added successfully.`);
+        alerts.success('Agente Creado', `${agentForm.name} se ha añadido con éxito.`);
       } else if (activeDialog === 'editAgent' && editingEntityId) {
         await updateAgent({ id: editingEntityId, agent: agentForm });
-        alerts.success('Agent Updated', 'Changes saved successfully.');
+        alerts.success('Agente Actualizado', 'Cambios guardados con éxito.');
       }
       closeDialogs();
     } catch (err) {
       console.error('Failed to save agent:', err);
-      alerts.error('Error', 'Failed to save agent profile.');
+      alerts.error('Error', 'No se pudo guardar el perfil del agente.');
     }
   };
 
@@ -82,11 +80,11 @@ export function DialogManager() {
   const handleSaveBot = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!botForm.channel_id || !botForm.interface_id) {
-      alerts.error('Validation Error', 'Please select a channel and an interface.');
+      alerts.error('Error de Validación', 'Por favor, selecciona un canal y una interfaz.');
       return;
     }
 
-    alerts.loading('Creating Bot', 'Initializing bot and preparing canvas...');
+    alerts.loading('Creando Bot', 'Inicializando bot y preparando lienzo...');
     try {
       await createBot({
         name: botForm.name,
@@ -116,17 +114,19 @@ export function DialogManager() {
       }]);
       onEdgesChange([]); // Clear edges
       
-      alerts.success('Bot Ready', 'Canvas initialized with welcome message.');
+      alerts.success('Bot Listo', 'Lienzo inicializado con mensaje de bienvenida.');
       closeDialogs();
     } catch (err) {
       console.error('Failed to create bot:', err);
-      alerts.error('Error', 'Could not create bot project.');
+      alerts.error('Error', 'No se pudo crear el proyecto del bot.');
     }
   };
 
   // 3. Tag Dialog
   const [tagForm, setTagForm] = useState<Partial<Tag>>({ name: '', description: '', color: '#6366F1' });
   useEffect(() => {
+    if (activeDialog === prevDialogRef.current) return; // Only run on dialog change
+
     if (activeDialog === 'editTag' && editingEntityId) {
       const existing = tags.find((t: Tag) => t.id === editingEntityId);
       if (existing) setTagForm(existing);
@@ -138,25 +138,27 @@ export function DialogManager() {
   const handleSaveTag = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedBotId) return;
-    alerts.loading('Saving Tag');
+    alerts.loading('Guardando Etiqueta');
     try {
       if (activeDialog === 'createTag') {
         await createTag({ ...tagForm, bot_id: selectedBotId });
-        alerts.success('Tag Created');
+        alerts.success('Etiqueta Creada');
       } else if (activeDialog === 'editTag' && editingEntityId) {
         await updateTag({ id: editingEntityId, tag: tagForm });
-        alerts.success('Tag Updated');
+        alerts.success('Etiqueta Actualizada');
       }
       closeDialogs();
     } catch (err) { 
       console.error(err); 
-      alerts.error('Error', 'Failed to save tag.');
+      alerts.error('Error', 'No se pudo guardar la etiqueta.');
     }
   };
 
   // 4. Variable Dialog
   const [varForm, setVarForm] = useState<Partial<GlobalVariable>>({ name: '', type: 'string', scope: 'bot', description: '' });
   useEffect(() => {
+    if (activeDialog === prevDialogRef.current) return; // Only run on dialog change
+
     if (activeDialog === 'editVar' && editingEntityId) {
       const existing = variables.find((v: GlobalVariable) => v.id === editingEntityId);
       if (existing) setVarForm(existing);
@@ -167,49 +169,56 @@ export function DialogManager() {
 
   const handleSaveVar = async (e: React.FormEvent) => {
     e.preventDefault();
-    alerts.loading('Saving Variable');
+    alerts.loading('Guardando Variable');
     try {
       if (activeDialog === 'createVar') {
         const payload = { ...varForm, bot_id: varForm.scope === 'bot' ? selectedBotId : null };
         await createVariable(payload);
-        alerts.success('Variable Created');
+        alerts.success('Variable Creada');
       } else if (activeDialog === 'editVar' && editingEntityId) {
         await updateVariable({ id: editingEntityId, variable: varForm });
-        alerts.success('Variable Updated');
+        alerts.success('Variable Actualizada');
       }
       closeDialogs();
     } catch (err) { 
       console.error(err); 
-      alerts.error('Error', 'Failed to save variable.');
+      alerts.error('Error', 'No se pudo guardar la variable.');
     }
   };
-
-  // 5. Flow Dialog
+  
+  // 5. Flow Dialog Logic
   const [flowName, setFlowName] = useState('');
   
   useEffect(() => {
+    if (activeDialog === prevDialogRef.current) return;
     if (activeDialog === 'createFlow') setFlowName('');
     else if (activeDialog === 'editFlow' && editingEntityId) {
       const flow = flows.find((f: any) => f.id === editingEntityId);
       if (flow) setFlowName(flow.name);
     }
   }, [activeDialog, editingEntityId, flows]);
+
   const handleSaveFlow = async (triggerConfig: any) => {
-    alerts.loading('Saving Flow');
+    alerts.loading('Guardando Flujo');
     try {
       const payload = {
-        name: flowName || 'New Flow',
+        name: flowName || 'Nuevo Flujo',
         trigger_type: triggerConfig.type,
         trigger_config: triggerConfig,
         status: 'draft' as any,
       };
 
-      await saveFlow(payload);
-      alerts.success('Flow Saved', 'The automation is ready.');
+      if (activeDialog === 'editFlow' && editingEntityId) {
+        await saveFlow({ ...payload, id: editingEntityId });
+      } else {
+        await saveFlow(payload);
+      }
+      
+      alerts.success('Flujo Guardado', 'La automatización está lista.');
       closeDialogs();
     } catch (err) {
       console.error(err);
-      alerts.error('Error', 'Could not save the flow configuration.');
+      alerts.error('Error', 'No se pudo guardar la configuración del flujo.');
     }
   };
 
@@ -219,47 +228,47 @@ export function DialogManager() {
           <Modal
             isOpen={activeDialog === 'createAgent' || activeDialog === 'editAgent'}
             onClose={closeDialogs}
-            title={activeDialog === 'createAgent' ? 'Create New Agent' : 'Edit Agent'}
+            title={activeDialog === 'createAgent' ? 'Invitar Nuevo Agente' : 'Editar Agente'}
           >
             <form onSubmit={handleSaveAgent} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">Name</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Nombre Completo</label>
                 <input
                   required
                   type="text"
                   value={agentForm.name}
                   onChange={e => setAgentForm({ ...agentForm, name: e.target.value })}
                   className="w-full px-3 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-                  placeholder="e.g. John Doe"
+                  placeholder="ej. Juan Pérez"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">Email</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Correo Electrónico</label>
                 <input
                   required
                   type="email"
                   value={agentForm.email}
                   onChange={e => setAgentForm({ ...agentForm, email: e.target.value })}
                   className="w-full px-3 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-                  placeholder="e.g. john@example.com"
+                  placeholder="juan@ejemplo.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">Role</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Rol</label>
                 <select
                   value={agentForm.role}
                   onChange={e => setAgentForm({ ...agentForm, role: e.target.value as Agent['role'] })}
                   className="w-full px-3 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none bg-white"
                 >
-                  <option value="viewer">Viewer</option>
+                  <option value="viewer">Observador</option>
                   <option value="editor">Editor</option>
-                  <option value="admin">Admin</option>
-                  <option value="owner">Owner</option>
+                  <option value="admin">Administrador</option>
+                  <option value="owner">Propietario</option>
                 </select>
               </div>
               <div className="pt-4 flex justify-end gap-2">
-                <button type="button" onClick={closeDialogs} className="px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-hover border border-border-light rounded-lg">Cancel</button>
-                <button type="submit" className="btn-primary">{activeDialog === 'createAgent' ? 'Create' : 'Save Changes'}</button>
+                <button type="button" onClick={closeDialogs} className="px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-hover border border-border-light rounded-lg">Cancelar</button>
+                <button type="submit" className="btn-primary">{activeDialog === 'createAgent' ? 'Invitar' : 'Guardar Cambios'}</button>
               </div>
             </form>
           </Modal>
@@ -268,48 +277,48 @@ export function DialogManager() {
           <Modal
             isOpen={activeDialog === 'createBot'}
             onClose={closeDialogs}
-            title="Create New Bot"
+            title="Desplegar Nuevo Bot"
           >
             <form onSubmit={handleSaveBot} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">Bot Name</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Nombre del Bot</label>
                 <input
                   required
                   type="text"
                   value={botForm.name}
                   onChange={e => setBotForm({ ...botForm, name: e.target.value })}
                   className="w-full px-3 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-                  placeholder="e.g. Support Bot"
+                  placeholder="ej. Asistente de Ventas"
                 />
               </div>
               <div>
-                 <label className="block text-sm font-medium text-text-primary mb-1">Description</label>
+                 <label className="block text-sm font-medium text-text-primary mb-1">Descripción</label>
                  <textarea
                    value={botForm.description}
                    onChange={e => setBotForm({ ...botForm, description: e.target.value })}
                    className="w-full px-3 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-                   placeholder="What does this bot do?"
+                   placeholder="¿Cuál es el propósito de este bot?"
                    rows={2}
                  />
                </div>
 
                <div className="grid grid-cols-2 gap-4">
                  <div>
-                   <label className="block text-sm font-medium text-text-primary mb-1">Channel</label>
+                   <label className="block text-sm font-medium text-text-primary mb-1">Canal</label>
                    <select
                      required
                      value={botForm.channel_id}
                      onChange={e => setBotForm({ ...botForm, channel_id: e.target.value, interface_id: '' })}
                      className="w-full px-3 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-brand-500 outline-none bg-white"
                    >
-                     <option value="">Select Channel</option>
+                     <option value="">Selecciona canal...</option>
                      {channels.map((c: any) => (
                        <option key={c.id} value={c.id}>{c.nombre[0].toUpperCase() + c.nombre.slice(1)}</option>
                      ))}
                    </select>
                  </div>
                  <div>
-                   <label className="block text-sm font-medium text-text-primary mb-1">Interface</label>
+                   <label className="block text-sm font-medium text-text-primary mb-1">Interfaz de Conexión</label>
                    <select
                      required
                      disabled={!botForm.channel_id}
@@ -317,7 +326,7 @@ export function DialogManager() {
                      onChange={e => setBotForm({ ...botForm, interface_id: e.target.value })}
                      className="w-full px-3 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-brand-500 outline-none bg-white disabled:bg-surface-hover"
                    >
-                     <option value="">Select Interface</option>
+                     <option value="">Selecciona interfaz...</option>
                      {activeInterfaces.map((i: any) => (
                        <option key={i.id} value={i.id}>{i.name}</option>
                      ))}
@@ -327,10 +336,10 @@ export function DialogManager() {
 
                {/* Flows Multi-Select */}
                <div className="space-y-2">
-                 <label className="block text-sm font-medium text-text-primary">Associate Flows</label>
+                 <label className="block text-sm font-medium text-text-primary">Asociar Flujos</label>
                  <div className="max-h-[120px] overflow-y-auto border border-border-light rounded-lg p-2 bg-surface-base space-y-1">
                    {flows.length === 0 ? (
-                     <p className="text-[10px] text-text-muted italic">No flows available. Create flows first.</p>
+                     <p className="text-[10px] text-text-muted italic">No hay flujos disponibles. Crea flujos primero.</p>
                    ) : (
                      flows.map((f: any) => (
                        <label key={f.id} className="flex items-center gap-2 p-1.5 hover:bg-white rounded-md cursor-pointer transition-colors">
@@ -353,8 +362,8 @@ export function DialogManager() {
                </div>
 
               <div className="pt-4 flex justify-end gap-2">
-                <button type="button" onClick={closeDialogs} className="px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-hover border border-border-light rounded-lg">Cancel</button>
-                <button type="submit" className="btn-primary">Create Bot</button>
+                <button type="button" onClick={closeDialogs} className="px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-hover border border-border-light rounded-lg">Cancelar</button>
+                <button type="submit" className="btn-primary">Crear Bot</button>
               </div>
             </form>
           </Modal>
@@ -363,18 +372,18 @@ export function DialogManager() {
           <Modal
             isOpen={activeDialog === 'createTag' || activeDialog === 'editTag'}
             onClose={closeDialogs}
-            title={activeDialog === 'createTag' ? 'Create New Tag' : 'Edit Tag'}
+            title={activeDialog === 'createTag' ? 'Crear Nueva Etiqueta' : 'Editar Etiqueta'}
           >
             <form onSubmit={handleSaveTag} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">Tag Name</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Nombre de la Etiqueta</label>
                 <input
                   required
                   type="text"
                   value={tagForm.name}
                   onChange={e => setTagForm({ ...tagForm, name: e.target.value })}
                   className="w-full px-3 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
-                  placeholder="e.g. Premium User"
+                  placeholder="ej. Usuario Premium"
                 />
               </div>
               <div>
@@ -390,7 +399,7 @@ export function DialogManager() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">Description</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Descripción</label>
                 <textarea
                   value={tagForm.description}
                   onChange={e => setTagForm({ ...tagForm, description: e.target.value })}
@@ -399,8 +408,8 @@ export function DialogManager() {
                 />
               </div>
               <div className="pt-4 flex justify-end gap-2">
-                <button type="button" onClick={closeDialogs} className="px-4 py-2 text-sm font-medium border border-border-light rounded-lg">Cancel</button>
-                <button type="submit" className="btn-primary">Save Tag</button>
+                <button type="button" onClick={closeDialogs} className="px-4 py-2 text-sm font-medium border border-border-light rounded-lg">Cancelar</button>
+                <button type="submit" className="btn-primary">Guardar Etiqueta</button>
               </div>
             </form>
           </Modal>
@@ -409,12 +418,12 @@ export function DialogManager() {
           <Modal
             isOpen={activeDialog === 'createVar' || activeDialog === 'editVar'}
             onClose={closeDialogs}
-            title={activeDialog === 'createVar' ? 'Create New Variable' : 'Edit Variable'}
+            title={activeDialog === 'createVar' ? 'Crear Nueva Variable' : 'Editar Variable'}
           >
             <form onSubmit={handleSaveVar} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1">Var Name</label>
+                  <label className="block text-sm font-medium text-text-primary mb-1">Nombre de Variable</label>
                   <input
                     required
                     type="text"
@@ -425,25 +434,25 @@ export function DialogManager() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1">Type</label>
+                  <label className="block text-sm font-medium text-text-primary mb-1">Tipo</label>
                   <select
                     value={varForm.type}
                     onChange={e => setVarForm({ ...varForm, type: e.target.value as any })}
                     className="w-full px-3 py-2 border border-border-light rounded-lg bg-white"
                   >
-                    <option value="string">String</option>
-                    <option value="number">Number</option>
-                    <option value="boolean">Boolean</option>
-                    <option value="json">JSON</option>
+                    <option value="string">Cadena (String)</option>
+                    <option value="number">Número (Number)</option>
+                    <option value="boolean">Booleano (Boolean)</option>
+                    <option value="json">Objeto (JSON)</option>
                   </select>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">Scope</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Alcance</label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
                     <input type="radio" checked={varForm.scope === 'bot'} onChange={() => setVarForm({ ...varForm, scope: 'bot' })} className="text-brand-600" />
-                    This Bot Only
+                    Solo este Bot
                   </label>
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
                     <input type="radio" checked={varForm.scope === 'global'} onChange={() => setVarForm({ ...varForm, scope: 'global' })} className="text-brand-600" />
@@ -452,7 +461,7 @@ export function DialogManager() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">Description</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Descripción</label>
                 <textarea
                   value={varForm.description}
                   onChange={e => setVarForm({ ...varForm, description: e.target.value })}
@@ -461,8 +470,8 @@ export function DialogManager() {
                 />
               </div>
               <div className="pt-4 flex justify-end gap-2">
-                <button type="button" onClick={closeDialogs} className="px-4 py-2 text-sm font-medium border border-border-light rounded-lg">Cancel</button>
-                <button type="submit" className="btn-primary">Save Variable</button>
+                <button type="button" onClick={closeDialogs} className="px-4 py-2 text-sm font-medium border border-border-light rounded-lg">Cancelar</button>
+                <button type="submit" className="btn-primary">Guardar Variable</button>
               </div>
             </form>
           </Modal>
@@ -471,25 +480,25 @@ export function DialogManager() {
           <Modal
             isOpen={!!isChannelConfigOpen}
             onClose={closeDialogs}
-            title={`Configure ${isChannelConfigOpen} Integration`}
+            title={`Configurar Integración ${isChannelConfigOpen}`}
             width="max-w-xl"
           >
             {(() => {
               const channel = channels.find((c: any) => c.nombre.toLowerCase() === isChannelConfigOpen?.toLowerCase());
-              if (!channel) return <div className="p-4 text-center text-text-muted">Channel not found in database.</div>;
+              if (!channel) return <div className="p-4 text-center text-text-muted">Canal no encontrado en la base de datos.</div>;
 
               return (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs text-text-muted uppercase font-bold">Connection Interfaces</p>
+                    <p className="text-xs text-text-muted uppercase font-bold">Interfaces de Conexión</p>
                     <button 
                       onClick={() => {
-                        const newInterfaces = [...(channel.interfaces || []), { id: `int-${Date.now()}`, name: 'New Interface', status: 'active' as const }];
+                        const newInterfaces = [...(channel.interfaces || []), { id: `int-${Date.now()}`, name: 'Nueva Interfaz', status: 'active' as const }];
                         updateChannel({ id: channel.id!, channel: { interfaces: newInterfaces } });
                       }}
                       className="text-xs font-bold text-brand-600 hover:underline"
                     >
-                      + Add Interface
+                      + Añadir Interfaz
                     </button>
                   </div>
 
@@ -541,7 +550,7 @@ export function DialogManager() {
                   </div>
 
                   <div className="pt-4 flex justify-end">
-                    <button type="button" onClick={closeDialogs} className="btn-primary">Done</button>
+                    <button type="button" onClick={closeDialogs} className="btn-primary">Hecho</button>
                   </div>
                 </div>
               );
@@ -552,22 +561,23 @@ export function DialogManager() {
           <Modal
             isOpen={activeDialog === 'createFlow' || activeDialog === 'editFlow'}
             onClose={closeDialogs}
-            title={activeDialog === 'createFlow' ? 'Create New Flow' : 'Edit Flow'}
+            title={activeDialog === 'createFlow' ? 'Nuevo Flujo de Automatización' : 'Editar Detalles del Flujo'}
             width="max-w-2xl"
           >
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">Flow Name</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Nombre del Flujo</label>
                 <input
                   required
                   type="text"
                   value={flowName}
                   onChange={e => setFlowName(e.target.value)}
                   className="w-full px-3 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
-                  placeholder="e.g. Welcome Automation"
+                  placeholder="ej. Flujo de Bienvenida"
                 />
               </div>
               <div className="border-t border-border-light pt-4">
+                 <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-3">Configurar Disparador (Trigger)</label>
                  <TriggerForm 
                    initialConfig={activeDialog === 'editFlow' ? flows.find(f => f.id === editingEntityId)?.trigger_config : undefined}
                    onSave={handleSaveFlow} 
@@ -580,29 +590,43 @@ export function DialogManager() {
           {/* Settings Modal */}
           <Modal
             isOpen={isSettingsOpen}
-            onClose={closeDialogs}
-            title="Settings"
-            width="max-w-2xl"
+            onClose={() => setIsSettingsOpen(false)}
+            title="Ajustes del Sistema"
           >
-            <div className="space-y-4">
-              <h3 className="text-md font-bold text-text-primary border-b border-border-light pb-2">Active Bot Settings</h3>
-              {selectedBotId ? (
-                <div className="text-sm text-text-secondary">
-                  <p><strong>Bot ID:</strong> {selectedBotId}</p>
-                  <p><strong>Name:</strong> {bots.find((b: any) => b.id === selectedBotId)?.name}</p>
+            <div className="p-4 space-y-6">
+              <div className="flex items-center gap-4 p-4 bg-brand-50 rounded-xl border border-brand-100">
+                <div className="w-12 h-12 rounded-full bg-brand-500 flex items-center justify-center text-white text-xl font-bold">
+                  {session?.user?.email?.charAt(0).toUpperCase()}
                 </div>
-              ) : (
-                <p className="text-sm text-text-muted">No bot selected.</p>
-              )}
-
-              <h3 className="text-md font-bold text-text-primary border-b border-border-light pb-2 mt-6">Global Preferences</h3>
-              <div className="flex items-center gap-3">
-                <input type="checkbox" id="dark-mode" className="rounded border-border-light text-brand-600 focus:ring-brand-500" />
-                <label htmlFor="dark-mode" className="text-sm font-medium text-text-primary">Enable Dark Mode (Coming soon)</label>
+                <div>
+                  <p className="text-sm font-bold text-text-primary">{session?.user?.email}</p>
+                  <p className="text-[10px] text-text-muted uppercase font-bold tracking-tight">Usuario Autenticado</p>
+                </div>
+                <button onClick={() => { signOut(); setIsSettingsOpen(false); }} className="ml-auto p-2 text-status-danger hover:bg-status-dangerBg rounded-lg transition-colors" title="Cerrar Sesión">
+                  <Trash2 className="w-5 h-5" />
+                </button>
               </div>
 
-              <div className="pt-6 flex justify-end">
-                <button type="button" onClick={closeDialogs} className="btn-primary">Close Settings</button>
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-text-secondary uppercase tracking-widest border-b pb-2">Preferencias</h4>
+                <div className="flex items-center justify-between p-3 bg-surface-base rounded-lg border border-border-light">
+                  <div>
+                    <p className="text-sm font-bold text-text-primary">Notificaciones de Escritorio</p>
+                    <p className="text-[10px] text-text-muted">Alertas en tiempo real sobre la actividad del bot.</p>
+                  </div>
+                  <div className="w-10 h-5 bg-brand-500 rounded-full relative">
+                     <div className="absolute right-1 top-1 w-3 h-3 bg-white rounded-full"></div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 p-1">
+                  <input type="checkbox" id="dark-mode" className="rounded border-border-light text-brand-600 focus:ring-brand-500" />
+                  <label htmlFor="dark-mode" className="text-sm font-medium text-text-primary">Habilitar Modo Oscuro (Próximamente)</label>
+                </div>
+
+                <div className="pt-6 flex justify-end">
+                  <button type="button" onClick={closeDialogs} className="btn-primary">Cerrar Ajustes</button>
+                </div>
               </div>
             </div>
           </Modal>
