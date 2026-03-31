@@ -52,6 +52,7 @@ function FlowBuilderInner() {
     setEdges,
     setIsNewFlow,
     isNewFlow,
+    setPendingNodeType,
   } = useFlowStore();
   
   const { 
@@ -109,6 +110,15 @@ function FlowBuilderInner() {
     } catch (error) {
       console.error('Error al guardar:', error);
       alert('Error al guardar el flujo.');
+    }
+  };
+
+  const handleAddNode = (type: string) => {
+    if (nodes.length === 0) {
+      setPendingNodeType(type);
+      setActiveDialog('createFlow');
+    } else {
+      addNode(type);
     }
   };
 
@@ -244,7 +254,7 @@ function FlowBuilderInner() {
             <Panel position="bottom-center" className="mb-8">
               <div className="glass-panel p-2 rounded-2xl flex items-center gap-2 shadow-2xl border border-white/40">
                 <button 
-                  onClick={() => addNode('messageNode')}
+                  onClick={() => handleAddNode('messageNode')}
                   className="group flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-brand-50 text-text-secondary hover:text-brand-600 transition-all min-w-[90px]"
                 >
                   <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -252,7 +262,7 @@ function FlowBuilderInner() {
                 </button>
                 <div className="w-px h-8 bg-border-light mx-1" />
                 <button 
-                  onClick={() => addNode('conditionNode')}
+                  onClick={() => handleAddNode('conditionNode')}
                   className="group flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-amber-50 text-text-secondary hover:text-amber-600 transition-all min-w-[90px]"
                 >
                   <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -260,7 +270,7 @@ function FlowBuilderInner() {
                 </button>
                 <div className="w-px h-8 bg-border-light mx-1" />
                 <button 
-                  onClick={() => addNode('actionNode')}
+                  onClick={() => handleAddNode('actionNode')}
                   className="group flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-indigo-50 text-text-secondary hover:text-indigo-600 transition-all min-w-[90px]"
                 >
                   <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />

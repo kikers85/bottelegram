@@ -88,6 +88,7 @@ export const MessageNode = memo(({ data, selected, id }: NodeProps<MessageNodeDa
       </div>
 
       <Handle type="target" position={Position.Left} className="!w-3 !h-3 !-left-1.5 !bg-brand-500 !border-2 !border-white" />
+      <Handle type="source" position={Position.Right} className="!w-3 !h-3 !-right-1.5 !bg-brand-500 !border-2 !border-white" />
     </div>
   );
 });

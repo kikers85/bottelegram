@@ -15,7 +15,24 @@ import { alerts } from '../../lib/alerts';
 import { Trash2 } from 'lucide-react';
 
 export function DialogManager() {
-  const { setActiveDialog, isChannelConfigOpen, setIsChannelConfigOpen, isSettingsOpen, setIsSettingsOpen, selectedBotId, editingEntityId, activeDialog } = useAppStore();
+  const { 
+    setNodes, 
+    onEdgesChange, 
+    pendingNodeType, 
+    setPendingNodeType,
+    setEdges 
+  } = useFlowStore();
+  const { 
+    setSelectedFlowId,
+    setActiveDialog, 
+    isChannelConfigOpen, 
+    setIsChannelConfigOpen, 
+    isSettingsOpen, 
+    setIsSettingsOpen, 
+    selectedBotId, 
+    editingEntityId, 
+    activeDialog 
+  } = useAppStore();
   const { session, signOut } = useAuthStore();
 
   const { agents, createAgent, updateAgent } = useAgents();
@@ -25,7 +42,6 @@ export function DialogManager() {
   const { tags, createTag, updateTag } = useTags(selectedBotId);
   const { variables, createVariable, updateVariable } = useVariables(selectedBotId);
 
-  const { setNodes, onEdgesChange } = useFlowStore();
   const prevDialogRef = useRef<string | null>(null);
 
   // Sync ref with activeDialog
@@ -208,12 +224,72 @@ export function DialogManager() {
         status: 'draft' as any,
       };
 
+      let saved: any;
       if (activeDialog === 'editFlow' && editingEntityId) {
-        await saveFlow({ ...payload, id: editingEntityId });
+        saved = await saveFlow({ ...payload, id: editingEntityId });
       } else {
-        await saveFlow(payload);
+        saved = await saveFlow(payload);
       }
       
+      const newFlowId = saved?.id || (Array.isArray(saved) ? saved[0]?.id : null);
+      
+      if (newFlowId) {
+        setSelectedFlowId(newFlowId);
+        
+        // If it was a new flow creation triggered by adding a node to empty canvas
+        if (pendingNodeType && activeDialog === 'createFlow') {
+          const triggerId = `trigger-${Date.now()}`;
+          const contentId = `${pendingNodeType}-${Date.now() + 50}`;
+          
+          const triggerNode = {
+            id: triggerId,
+            type: 'triggerNode',
+            position: { x: 250, y: 50 },
+            data: {
+              id: triggerId.slice(0, 8),
+              label: 'Disparador',
+              trigger_type: triggerConfig.type,
+              status: 'published'
+            }
+          };
+
+          const contentNode = {
+            id: contentId,
+            type: pendingNodeType,
+            position: { x: 250, y: 250 },
+            data: pendingNodeType === 'messageNode' ? {
+              id: contentId.slice(0, 8),
+              label: 'Enviar Mensaje',
+              messages: [{ id: `m-${Date.now()}`, type: 'text', content: '' }],
+              buttons: [],
+              status: 'draft',
+            } : pendingNodeType === 'conditionNode' ? {
+              id: contentId.slice(0, 8),
+              label: 'Condición',
+              condition: '',
+              status: 'draft',
+            } : {
+              id: contentId.slice(0, 8),
+              label: 'Acción',
+              action: '',
+              status: 'draft',
+            }
+          };
+
+          const edge = {
+            id: `e-${triggerId}-${contentId}`,
+            source: triggerId,
+            target: contentId,
+            animated: true,
+            style: { stroke: '#6366F1', strokeWidth: 2 }
+          };
+
+          setNodes([triggerNode, contentNode]);
+          setEdges([edge]);
+          setPendingNodeType(null);
+        }
+      }
+
       alerts.success('Flujo Guardado', 'La automatización está lista.');
       closeDialogs();
     } catch (err) {

@@ -31,6 +31,8 @@ export interface FlowState {
   isNewFlow: boolean;
   setIsNewFlow: (is: boolean) => void;
   resetFlow: () => void;
+  pendingNodeType: string | null;
+  setPendingNodeType: (type: string | null) => void;
 }
 
 /**
@@ -43,6 +45,9 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   selectedNodeId: null,
   viewport: { x: 0, y: 0, zoom: 0.2 },
   isNewFlow: false,
+  pendingNodeType: null,
+
+  setPendingNodeType: (pendingNodeType) => set({ pendingNodeType }),
 
   onNodesChange: (changes: NodeChange[]) => {
     set({
