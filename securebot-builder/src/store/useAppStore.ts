@@ -25,7 +25,7 @@ export interface ChannelConfig {
 }
 
 export interface AppState {
-  currentView: 'bots' | 'tags' | 'variables' | 'agents' | 'chat' | 'flows' | 'channels';
+  currentView: 'bots' | 'tags' | 'variables' | 'agents' | 'chat' | 'flows' | 'channels' | 'marketplace';
   selectedBotId: string | null;
   selectedFlowId: string | null;
   showNodeProperties: boolean;

@@ -23,6 +23,7 @@ import {
   PanelLeftClose,
   Share2,
   Globe,
+  Sparkles,
 } from 'lucide-react';
 
 const navItems = [
@@ -32,6 +33,7 @@ const navItems = [
   { id: 'variables', label: 'Variables', icon: VariableIcon },
   { id: 'agents', label: 'Agentes', icon: Users },
   { id: 'channels', label: 'Canales', icon: Share2 },
+  { id: 'marketplace', label: 'Tienda de Plantillas', icon: Sparkles },
 ] as const;
 
 
