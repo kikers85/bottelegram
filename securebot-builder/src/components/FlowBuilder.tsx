@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -57,45 +57,48 @@ function FlowBuilderInner() {
   const { 
     showTestChat, 
     setShowTestChat, 
-    showNodeProperties, 
-    setShowNodeProperties,
+    selectedFlowId,
+    setActiveDialog,
     isSidebarDrawerOpen,
     setIsSidebarDrawerOpen,
-    selectedBotId,
-    setActiveDialog
+    showNodeProperties,
+    setShowNodeProperties
   } = useAppStore();
 
-  const { activeFlow, isLoading, saveFlow } = useFlows(selectedBotId);
+  const { isLoading, saveFlow, flows } = useFlows();
+  
+  // Find current flow from the list
+  const currentFlow = flows.find((f: any) => f.id === selectedFlowId) || null;
 
   // Load flow data into local store when fetched
   useEffect(() => {
-    if (activeFlow) {
-      setNodes(activeFlow.nodes || []);
-      setEdges(activeFlow.edges || []);
+    if (currentFlow) {
+      setNodes(currentFlow.nodes || []);
+      setEdges(currentFlow.edges || []);
       setIsNewFlow(false);
     } else {
       setNodes([]);
       setEdges([]);
       setIsNewFlow(true);
     }
-  }, [activeFlow, setNodes, setEdges, setIsNewFlow]);
+  }, [currentFlow, setNodes, setEdges, setIsNewFlow]);
 
   const handleSaveFlow = async (status: 'draft' | 'published' | 'archived') => {
-    if (!selectedBotId) return;
-
-    if (isNewFlow && !activeFlow) {
+    if (isNewFlow && !currentFlow) {
       setActiveDialog('createFlow');
       return;
     }
 
     try {
-      await saveFlow({
-        bot_id: selectedBotId,
+      const flowData: any = {
+        name: currentFlow?.name || 'Untitled Flow',
         nodes,
         edges,
-        id: activeFlow?.id,
+        id: currentFlow?.id,
         status: status as any
-      });
+      };
+
+      await saveFlow(flowData);
       alert(`Flow ${status} successfully!`);
     } catch (error) {
       console.error('Save error:', error);
@@ -103,7 +106,7 @@ function FlowBuilderInner() {
     }
   };
 
-  const zoomLevels = [0.1, 0.2, 0.5, 1, 2];
+  const zoomLevels = [0.3, 0.4, 0.5, 1];
   const currentZoom = getViewport().zoom;
 
   if (isLoading) return <div className="w-full h-screen flex items-center justify-center bg-surface-bg text-text-muted">Loading Flow...</div>;
@@ -123,7 +126,7 @@ function FlowBuilderInner() {
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             nodeTypes={nodeTypes}
-            defaultViewport={{ x: 0, y: 0, zoom: 0.2 }}
+            defaultViewport={{ x: 0, y: 0, zoom: 0.3 }}
             minZoom={0.1}
             maxZoom={4}
             className="bg-dot-pattern"

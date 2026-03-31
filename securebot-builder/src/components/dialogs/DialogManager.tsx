@@ -5,7 +5,7 @@ import { useFlowStore } from '../../store/useFlowStore';
 import { Modal } from './Modal';
 import { useTags } from '../../hooks/queries/useTags';
 import { useVariables } from '../../hooks/queries/useVariables';
-import type { Agent, Tag, GlobalVariable, Bot } from '../../lib/validations/schemas';
+import type { Agent, Tag, GlobalVariable } from '../../lib/validations/schemas';
 import { useAgents } from '../../hooks/queries/useAgents';
 import { useBots } from '../../hooks/queries/useBots';
 import { useChannels } from '../../hooks/queries/useChannels';
@@ -31,7 +31,7 @@ export function DialogManager() {
   const { agents, createAgent, updateAgent } = useAgents();
   const { bots, createBot } = useBots();
   const { channels, updateChannel } = useChannels();
-  const { flows, saveFlow } = useFlows(selectedBotId);
+  const { flows, saveFlow } = useFlows();
   const { tags, createTag, updateTag } = useTags(selectedBotId);
   const { variables, createVariable, updateVariable } = useVariables(selectedBotId);
 
@@ -73,11 +73,11 @@ export function DialogManager() {
     }
   };
 
-  // 2. Bot Dialog (Creates new bot & clears canvas)
-  const [botForm, setBotForm] = useState({ name: '', description: '', channel_id: '', interface_id: '' });
+  // 2. Bot Dialog (Creates new bot)
+  const [botForm, setBotForm] = useState({ name: '', description: '', channel_id: '', interface_id: '', flow_ids: [] as string[] });
   
   // Get active interfaces for selected channel
-  const activeInterfaces = channels.find(c => c.id === botForm.channel_id)?.interfaces || [];
+  const activeInterfaces = channels.find((c: any) => c.id === botForm.channel_id)?.interfaces || [];
 
   const handleSaveBot = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,7 +93,7 @@ export function DialogManager() {
         description: botForm.description,
         channel_id: botForm.channel_id,
         interface_id: botForm.interface_id,
-        flow_ids: [],
+        flow_ids: botForm.flow_ids,
         owner_id: session?.user?.id || '00000000-0000-0000-0000-000000000000',
         status: 'draft',
         trigger_on: 'manual',
@@ -190,17 +190,14 @@ export function DialogManager() {
   useEffect(() => {
     if (activeDialog === 'createFlow') setFlowName('');
     else if (activeDialog === 'editFlow' && editingEntityId) {
-      const flow = flows.find(f => f.id === editingEntityId);
+      const flow = flows.find((f: any) => f.id === editingEntityId);
       if (flow) setFlowName(flow.name);
     }
   }, [activeDialog, editingEntityId, flows]);
-
   const handleSaveFlow = async (triggerConfig: any) => {
-    if (!selectedBotId) return;
     alerts.loading('Saving Flow');
     try {
       const payload = {
-        bot_id: selectedBotId,
         name: flowName || 'New Flow',
         trigger_type: triggerConfig.type,
         trigger_config: triggerConfig,
@@ -208,7 +205,7 @@ export function DialogManager() {
       };
 
       await saveFlow(payload);
-      alerts.success('Flow Created', 'The flow and its trigger were saved.');
+      alerts.success('Flow Saved', 'The automation is ready.');
       closeDialogs();
     } catch (err) {
       console.error(err);
@@ -306,7 +303,7 @@ export function DialogManager() {
                      className="w-full px-3 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-brand-500 outline-none bg-white"
                    >
                      <option value="">Select Channel</option>
-                     {channels.map(c => (
+                     {channels.map((c: any) => (
                        <option key={c.id} value={c.id}>{c.nombre[0].toUpperCase() + c.nombre.slice(1)}</option>
                      ))}
                    </select>
@@ -321,12 +318,40 @@ export function DialogManager() {
                      className="w-full px-3 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-brand-500 outline-none bg-white disabled:bg-surface-hover"
                    >
                      <option value="">Select Interface</option>
-                     {activeInterfaces.map(i => (
+                     {activeInterfaces.map((i: any) => (
                        <option key={i.id} value={i.id}>{i.name}</option>
                      ))}
                    </select>
                  </div>
                </div>
+
+               {/* Flows Multi-Select */}
+               <div className="space-y-2">
+                 <label className="block text-sm font-medium text-text-primary">Associate Flows</label>
+                 <div className="max-h-[120px] overflow-y-auto border border-border-light rounded-lg p-2 bg-surface-base space-y-1">
+                   {flows.length === 0 ? (
+                     <p className="text-[10px] text-text-muted italic">No flows available. Create flows first.</p>
+                   ) : (
+                     flows.map((f: any) => (
+                       <label key={f.id} className="flex items-center gap-2 p-1.5 hover:bg-white rounded-md cursor-pointer transition-colors">
+                         <input 
+                           type="checkbox" 
+                           checked={botForm.flow_ids.includes(f.id!)}
+                           onChange={(e) => {
+                             const ids = e.target.checked 
+                               ? [...botForm.flow_ids, f.id!]
+                               : botForm.flow_ids.filter(id => id !== f.id);
+                             setBotForm({ ...botForm, flow_ids: ids });
+                           }}
+                           className="rounded border-border-light text-brand-600 focus:ring-brand-500"
+                         />
+                         <span className="text-xs font-medium text-text-secondary">{f.name}</span>
+                       </label>
+                     ))
+                   )}
+                 </div>
+               </div>
+
               <div className="pt-4 flex justify-end gap-2">
                 <button type="button" onClick={closeDialogs} className="px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-hover border border-border-light rounded-lg">Cancel</button>
                 <button type="submit" className="btn-primary">Create Bot</button>
@@ -450,7 +475,7 @@ export function DialogManager() {
             width="max-w-xl"
           >
             {(() => {
-              const channel = channels.find(c => c.nombre.toLowerCase() === isChannelConfigOpen?.toLowerCase());
+              const channel = channels.find((c: any) => c.nombre.toLowerCase() === isChannelConfigOpen?.toLowerCase());
               if (!channel) return <div className="p-4 text-center text-text-muted">Channel not found in database.</div>;
 
               return (
@@ -564,7 +589,7 @@ export function DialogManager() {
               {selectedBotId ? (
                 <div className="text-sm text-text-secondary">
                   <p><strong>Bot ID:</strong> {selectedBotId}</p>
-                  <p><strong>Name:</strong> {bots.find((b: Bot) => b.id === selectedBotId)?.name}</p>
+                  <p><strong>Name:</strong> {bots.find((b: any) => b.id === selectedBotId)?.name}</p>
                 </div>
               ) : (
                 <p className="text-sm text-text-muted">No bot selected.</p>

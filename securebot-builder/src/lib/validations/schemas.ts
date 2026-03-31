@@ -98,8 +98,8 @@ export type GlobalVariable = z.infer<typeof VariableSchema>;
 
 // 5. Trigger Config Schema (Discriminated Union)
 export const TriggerTypeEnum = z.enum([
-  'keyword', 'post_comment', 'story_mention', 'story_reply', 
-  'ad_click', 'new_contact', 'tag_added', 'webhook', 
+  'keyword', 'post_comment', 'story_mention', 'story_reply',
+  'ad_click', 'new_contact', 'tag_added', 'webhook',
   'scheduled', 'user_idle'
 ]);
 
@@ -111,7 +111,7 @@ export const TriggerConfigSchema = z.union([
   z.object({ type: z.literal('ad_click'), ref_parameter: z.string() }),
   z.object({ type: z.literal('new_contact'), platform: z.enum(['whatsapp', 'instagram', 'facebook', 'web']) }),
   z.object({ type: z.literal('tag_added'), tag_ids: z.array(z.string().uuid()) }),
-  z.object({ type: z.literal('webhook'), url: z.string().url(), mapping: z.record(z.string()) }),
+  z.object({ type: z.literal('webhook'), url: z.string().url(), mapping: z.record(z.string(), z.string()) }),
   z.object({ type: z.literal('scheduled'), scheduled_at: z.string(), recurrence: z.enum(['once', 'daily', 'weekly']) }),
   z.object({ type: z.literal('user_idle'), time: z.number(), unit: z.enum(['minutes', 'hours', 'days']) }),
 ]);
@@ -122,7 +122,6 @@ export type TriggerType = z.infer<typeof TriggerTypeEnum>;
 // 6. Flow Schema
 export const FlowSchema = z.object({
   id: z.string().uuid().optional(),
-  bot_id: z.string().uuid(),
   name: z.string().min(1, 'Flow name is required'),
   trigger_type: TriggerTypeEnum.default('keyword'),
   trigger_config: z.any().optional(), // We'll validate this manually or via discriminatedUnion in UI

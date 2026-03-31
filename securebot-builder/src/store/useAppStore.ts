@@ -21,6 +21,7 @@ export interface ChannelConfig {
 export interface AppState {
   currentView: 'bots' | 'tags' | 'variables' | 'agents' | 'chat' | 'flows' | 'channels';
   selectedBotId: string | null;
+  selectedFlowId: string | null;
   showNodeProperties: boolean;
   showTestChat: boolean;
   
@@ -35,6 +36,7 @@ export interface AppState {
   
   setCurrentView: (view: AppState['currentView']) => void;
   setSelectedBotId: (id: string | null) => void;
+  setSelectedFlowId: (id: string | null) => void;
   setShowNodeProperties: (show: boolean) => void;
   setShowTestChat: (show: boolean) => void;
   
@@ -53,6 +55,7 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       currentView: 'bots',
       selectedBotId: null,
+      selectedFlowId: null,
       showNodeProperties: false,
       showTestChat: false,
       isSidebarDrawerOpen: true,
@@ -64,6 +67,7 @@ export const useAppStore = create<AppState>()(
       
       setCurrentView: (view) => set({ currentView: view }),
       setSelectedBotId: (id) => set({ selectedBotId: id }),
+      setSelectedFlowId: (id) => set({ selectedFlowId: id }),
       setShowNodeProperties: (show) => set({ showNodeProperties: show }),
       setShowTestChat: (show) => set({ showTestChat: show }),
       

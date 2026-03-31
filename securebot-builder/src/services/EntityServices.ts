@@ -1,5 +1,5 @@
 import { SupabaseService } from './SupabaseService';
-import { AgentSchema, BotSchema, FlowSchema, TagSchema, VariableSchema, ChannelSchema } from '../lib/validations/schemas';
+import { AgentSchema, BotSchema, FlowSchema, TagSchema, VariableSchema } from '../lib/validations/schemas';
 import type { Agent, Bot, Flow, Tag, GlobalVariable, Channel } from '../lib/validations/schemas';
 
 // 1. Agent Service
@@ -45,8 +45,15 @@ export class FlowService extends SupabaseService {
         return this.create<Flow>(validated);
     }
 
-    async getFlowsByBotId(botId: string): Promise<Flow[]> {
-        return this.getAll<Flow>((query) => query.eq('bot_id', botId));
+
+
+    async getFlows(): Promise<Flow[]> {
+        return this.getAll<Flow>();
+    }
+
+    async getFlowsByIds(ids: string[]): Promise<Flow[]> {
+        if (!ids || ids.length === 0) return [];
+        return this.getAll<Flow>((query) => query.in('id', ids));
     }
 }
 

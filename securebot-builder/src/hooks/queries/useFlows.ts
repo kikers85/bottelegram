@@ -2,19 +2,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { flowService } from '../../services/EntityServices';
 import type { Flow } from '../../lib/validations/schemas';
 
-export function useFlows(botId: string | null) {
+export function useFlows() {
     const queryClient = useQueryClient();
 
     const fetchFlows = useQuery({
-        queryKey: ['flows', botId],
-        queryFn: () => botId ? flowService.getFlowsByBotId(botId) : [],
-        enabled: !!botId,
+        queryKey: ['flows'],
+        queryFn: () => flowService.getFlows(),
     });
 
     const saveFlowMutation = useMutation({
         mutationFn: (flow: Partial<Flow>) => flowService.saveFlow(flow),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['flows', botId] });
+            queryClient.invalidateQueries({ queryKey: ['flows'] });
         },
     });
 

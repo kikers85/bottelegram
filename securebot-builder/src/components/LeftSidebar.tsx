@@ -83,28 +83,46 @@ function BotList() {
   );
 }
 function FlowList() {
-  const { selectedBotId, setActiveDialog } = useAppStore();
-  const { flows, isLoading } = useFlows(selectedBotId);
+  const { selectedFlowId, setSelectedFlowId, setActiveDialog } = useAppStore();
+  const { flows, isLoading } = useFlows(); // Fetch all flows
 
-  if (!selectedBotId) return <div className="p-4 text-xs text-text-muted">Select a bot first.</div>;
   if (isLoading) return <div className="p-4 text-xs text-text-muted">Loading flows...</div>;
 
   return (
     <div className="space-y-2">
       {flows.map((flow: Flow) => (
-        <div key={flow.id} className="w-full p-3 rounded-xl bg-white border border-border-light flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
+        <button 
+          key={flow.id} 
+          onClick={() => setSelectedFlowId(flow.id!)}
+          className={cn(
+            "w-full p-3 rounded-xl border flex items-center gap-3 transition-all",
+            selectedFlowId === flow.id 
+              ? "bg-indigo-50 border-indigo-500 shadow-sm" 
+              : "bg-white border-border-light hover:border-brand-300"
+          )}
+        >
+          <div className={cn(
+            "w-8 h-8 rounded-lg flex items-center justify-center",
+            selectedFlowId === flow.id ? "bg-indigo-500 text-white" : "bg-indigo-100 text-indigo-600"
+          )}>
             <Zap className="w-4 h-4" />
           </div>
-          <div className="flex-1">
-            <p className="text-sm font-bold text-text-primary">{flow.name}</p>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-bold text-text-primary truncate">{flow.name}</p>
             <p className="text-[10px] text-text-muted uppercase">{flow.trigger_type}</p>
           </div>
-          <button onClick={() => setActiveDialog('editFlow', flow.id)} className="p-1.5 hover:bg-surface-hover rounded-lg">
+          <button onClick={(e) => { e.stopPropagation(); setActiveDialog('editFlow', flow.id); }} className="p-1.5 hover:bg-surface-hover rounded-lg">
             <Edit className="w-3.5 h-3.5 text-text-muted" />
           </button>
-        </div>
+        </button>
       ))}
+      <button 
+        onClick={() => setActiveDialog('createFlow')}
+        className="w-full p-3 rounded-xl border-2 border-dashed border-border-strong text-text-muted hover:border-brand-400 hover:text-brand-500 transition-all flex items-center justify-center gap-2"
+      >
+        <Plus className="w-4 h-4" />
+        <span className="text-xs font-bold uppercase">New Flow</span>
+      </button>
       </div>
     );
   }
