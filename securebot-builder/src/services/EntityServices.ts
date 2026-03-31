@@ -55,6 +55,10 @@ export class FlowService extends SupabaseService {
         if (!ids || ids.length === 0) return [];
         return this.getAll<Flow>((query) => query.in('id', ids));
     }
+
+    async deleteFlow(id: string): Promise<void> {
+        return this.delete(id);
+    }
 }
 
 // 4. Tag Service

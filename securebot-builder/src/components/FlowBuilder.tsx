@@ -14,7 +14,9 @@ import {
   MessageNode, 
   ConditionNode, 
   ActionNode, 
-  TriggerNode 
+  TriggerNode,
+  UserInputNode,
+  ResourceNode 
 } from './Nodes';
 import { SidePanel } from './SidePanel';
 import { LeftSidebar } from './LeftSidebar';
@@ -23,13 +25,16 @@ import { MarketplaceView } from './MarketplaceView';
 import { useAppStore } from '../store/useAppStore';
 import { useFlows } from '../hooks/queries/useFlows';
 import { cn } from '../lib/cn';
-import { Plus, Save, Zap, MessageCircle, Eye, EyeOff, PanelLeftOpen } from 'lucide-react';
+import { alerts } from '../lib/alerts';
+import { Plus, Save, Zap, MessageCircle, PanelLeftOpen, PanelRightOpen, PanelRightClose } from 'lucide-react';
 
 const nodeTypes = {
   messageNode: MessageNode,
   conditionNode: ConditionNode,
   actionNode: ActionNode,
   triggerNode: TriggerNode,
+  userInputNode: UserInputNode,
+  resourceNode: ResourceNode,
 };
 
 export function FlowBuilder() {
@@ -52,7 +57,6 @@ function FlowBuilderInner() {
     setNodes,
     setEdges,
     setIsNewFlow,
-    isNewFlow,
     setPendingNodeType,
   } = useFlowStore();
   
@@ -63,8 +67,8 @@ function FlowBuilderInner() {
     setActiveDialog,
     isSidebarDrawerOpen,
     setIsSidebarDrawerOpen,
-    showNodeProperties,
-    setShowNodeProperties,
+    isSidePanelDrawerOpen,
+    setIsSidePanelDrawerOpen,
     currentView
   } = useAppStore();
 
@@ -79,7 +83,27 @@ function FlowBuilderInner() {
     if (selectedFlowId === lastLoadedFlowId.current) return; // Don't reload if already on this flow
 
     if (currentFlow) {
-      setNodes(currentFlow.nodes || []);
+      const loadedNodes = currentFlow.nodes || [];
+      const hasTrigger = loadedNodes.some((n: any) => n.type === 'triggerNode');
+      
+      // Reconstruct trigger node from trigger_config if not present in nodes
+      const finalNodes = hasTrigger ? loadedNodes : [
+        {
+          id: `trigger-${currentFlow.id || 'auto'}`,
+          type: 'triggerNode',
+          position: { x: 250, y: 50 },
+          data: {
+            id: `trigger-${currentFlow.id || 'auto'}`.slice(0, 8),
+            label: currentFlow.trigger_type || 'Disparador',
+            trigger_type: currentFlow.trigger_type || 'keyword',
+            trigger_config: currentFlow.trigger_config || {},
+            status: 'published'
+          }
+        },
+        ...loadedNodes
+      ];
+
+      setNodes(finalNodes);
       setEdges(currentFlow.edges || []);
       setIsNewFlow(false);
       lastLoadedFlowId.current = selectedFlowId || null;
@@ -92,31 +116,40 @@ function FlowBuilderInner() {
   }, [currentFlow, selectedFlowId, setNodes, setEdges, setIsNewFlow]);
 
   const handleSaveFlow = async (status: 'draft' | 'published' | 'archived') => {
-    if (isNewFlow && !currentFlow) {
+    if (!selectedFlowId) {
       setActiveDialog('createFlow');
       return;
     }
 
     try {
+      // Filter out trigger nodes - they are NOT saved as nodes in the database
+      const nodesWithoutTrigger = nodes.filter((n: any) => n.type !== 'triggerNode');
+      // Filter out edges that connect FROM trigger nodes
+      const triggerIds = nodes.filter((n: any) => n.type === 'triggerNode').map((n: any) => n.id);
+      const edgesWithoutTrigger = edges.filter((e: any) => !triggerIds.includes(e.source));
+
       const flowData: any = {
         name: currentFlow?.name || 'Flujo sin nombre',
-        nodes,
-        edges,
-        id: currentFlow?.id,
-        status: status as any
+        trigger_type: currentFlow?.trigger_type || 'keyword',
+        trigger_config: currentFlow?.trigger_config || {},
+        nodes: nodesWithoutTrigger,
+        edges: edgesWithoutTrigger,
+        id: selectedFlowId,
+        status: status
       };
 
       await saveFlow(flowData);
       const statusLabel = status === 'published' ? 'publicado' : status === 'draft' ? 'guardado como borrador' : 'archivado';
-      alert(`¡Flujo ${statusLabel} exitosamente!`);
-    } catch (error) {
+      alerts.success('Flujo Guardado', `El flujo ha sido ${statusLabel} exitosamente.`);
+    } catch (error: any) {
       console.error('Error al guardar:', error);
-      alert('Error al guardar el flujo.');
+      const errorMessage = error?.message || error?.response?.data?.message || 'No se pudo guardar el flujo. Verifica tu conexión e intenta nuevamente.';
+      alerts.error('Error al Guardar', errorMessage);
     }
   };
 
   const handleAddNode = (type: string) => {
-    if (nodes.length === 0) {
+    if (!selectedFlowId) {
       setPendingNodeType(type);
       setActiveDialog('createFlow');
     } else {
@@ -222,16 +255,16 @@ function FlowBuilderInner() {
                   <Zap className="w-4 h-4" />
                   <span>Publicar</span>
                 </button>
-                
+
                 <button 
-                  onClick={() => setShowNodeProperties(!showNodeProperties)}
+                  onClick={() => setIsSidePanelDrawerOpen(!isSidePanelDrawerOpen)}
                   className={cn(
                     "w-11 h-11 rounded-btn bg-white border flex items-center justify-center transition-all shadow-sm",
-                    showNodeProperties ? "border-brand-500 text-brand-500" : "border-border-light text-text-secondary hover:text-brand-500"
+                    isSidePanelDrawerOpen ? "border-brand-500 text-brand-500" : "border-border-light text-text-secondary hover:text-brand-500"
                   )}
-                  title="Alternar panel de propiedades"
+                  title={isSidePanelDrawerOpen ? "Ocultar Propiedades" : "Mostrar Propiedades"}
                 >
-                  {showNodeProperties ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                  {isSidePanelDrawerOpen ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
                 </button>
               </Panel>
 
@@ -267,6 +300,14 @@ function FlowBuilderInner() {
                   </button>
                   <div className="w-px h-8 bg-border-light mx-1" />
                   <button 
+                    onClick={() => handleAddNode('userInputNode')}
+                    className="group flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-purple-50 text-text-secondary hover:text-purple-600 transition-all min-w-[90px]"
+                  >
+                    <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    <span className="text-[10px] font-bold uppercase">Respuesta</span>
+                  </button>
+                  <div className="w-px h-8 bg-border-light mx-1" />
+                  <button 
                     onClick={() => handleAddNode('conditionNode')}
                     className="group flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-amber-50 text-text-secondary hover:text-amber-600 transition-all min-w-[90px]"
                   >
@@ -281,6 +322,14 @@ function FlowBuilderInner() {
                     <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
                     <span className="text-[10px] font-bold uppercase">Acción</span>
                   </button>
+                  <div className="w-px h-8 bg-border-light mx-1" />
+                  <button 
+                    onClick={() => handleAddNode('resourceNode')}
+                    className="group flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-teal-50 text-text-secondary hover:text-teal-600 transition-all min-w-[90px]"
+                  >
+                    <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    <span className="text-[10px] font-bold uppercase">Recurso</span>
+                  </button>
                 </div>
               </Panel>
             </ReactFlow>
@@ -292,7 +341,7 @@ function FlowBuilderInner() {
       </div>
 
       {/* Right Properties SidePanel */}
-      {showNodeProperties && <SidePanel />}
+      {isSidePanelDrawerOpen && <SidePanel />}
     </div>
   );
 }

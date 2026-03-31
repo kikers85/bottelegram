@@ -33,6 +33,7 @@ export interface AppState {
   
   // UI States
   isSidebarDrawerOpen: boolean;
+  isSidePanelDrawerOpen: boolean;
   isSettingsOpen: boolean;
   activeDialog: 'createAgent'|'editAgent'|'createVar'|'editVar'|'createTag'|'editTag'|'createBot'|'editBot'|'createFlow'|'editFlow'| null;
   isChannelConfigOpen: ChannelType | null;
@@ -48,6 +49,7 @@ export interface AppState {
   
   // UI Actions
   setIsSidebarDrawerOpen: (open: boolean) => void;
+  setIsSidePanelDrawerOpen: (open: boolean) => void;
   setIsSettingsOpen: (open: boolean) => void;
   setActiveDialog: (dialog: AppState['activeDialog'], entityId?: string) => void;
   setIsChannelConfigOpen: (channel: ChannelType | null) => void;
@@ -65,6 +67,7 @@ export const useAppStore = create<AppState>()(
       showNodeProperties: false,
       showTestChat: false,
       isSidebarDrawerOpen: true,
+      isSidePanelDrawerOpen: false,
       isSettingsOpen: false,
       activeDialog: null,
       isChannelConfigOpen: null,
@@ -78,6 +81,7 @@ export const useAppStore = create<AppState>()(
       setShowTestChat: (show) => set({ showTestChat: show }),
       
       setIsSidebarDrawerOpen: (open) => set({ isSidebarDrawerOpen: open }),
+      setIsSidePanelDrawerOpen: (open) => set({ isSidePanelDrawerOpen: open }),
       setIsSettingsOpen: (open) => set({ isSettingsOpen: open }),
       setActiveDialog: (dialog, entityId?: string) => set({ activeDialog: dialog, editingEntityId: entityId || null }),
       setIsChannelConfigOpen: (channel) => set({ isChannelConfigOpen: channel }),

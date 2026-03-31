@@ -17,11 +17,19 @@ export function useFlows() {
         },
     });
 
+    const deleteFlowMutation = useMutation({
+        mutationFn: (id: string) => flowService.deleteFlow(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['flows'] });
+        },
+    });
+
     return {
         flows: fetchFlows.data || [],
         activeFlow: fetchFlows.data?.[0] || null,
         isLoading: fetchFlows.isLoading,
         error: fetchFlows.error,
         saveFlow: saveFlowMutation.mutateAsync,
+        deleteFlow: deleteFlowMutation.mutateAsync,
     };
 }

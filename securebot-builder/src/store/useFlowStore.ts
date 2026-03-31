@@ -33,6 +33,7 @@ export interface FlowState {
   resetFlow: () => void;
   pendingNodeType: string | null;
   setPendingNodeType: (type: string | null) => void;
+  deleteNode: (id: string) => void;
 }
 
 /**
@@ -119,6 +120,18 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         action: '',
         externalApi: undefined,
         status: 'draft',
+      } : type === 'userInputNode' ? {
+        id: nodeId,
+        label: 'User Input',
+        question: '',
+        variableName: '',
+        variableType: 'string',
+        status: 'draft',
+      } : type === 'resourceNode' ? {
+        id: nodeId,
+        label: 'Recurso',
+        variables: [],
+        status: 'draft',
       } : {
         id: nodeId,
         label: 'Trigger',
@@ -127,10 +140,8 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       },
     };
     
-    const isNew = get().nodes.length === 0;
     set({ 
       nodes: [...get().nodes, newNode],
-      isNewFlow: isNew ? true : get().isNewFlow
     });
   },
 
@@ -142,6 +153,14 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         }
         return node;
       }),
+    });
+  },
+
+  deleteNode: (id) => {
+    set({
+      nodes: get().nodes.filter((node) => node.id !== id),
+      edges: get().edges.filter((edge) => edge.source !== id && edge.target !== id),
+      selectedNodeId: get().selectedNodeId === id ? null : get().selectedNodeId,
     });
   },
 }));

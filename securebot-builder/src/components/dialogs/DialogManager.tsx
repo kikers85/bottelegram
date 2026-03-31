@@ -20,7 +20,9 @@ export function DialogManager() {
     onEdgesChange, 
     pendingNodeType, 
     setPendingNodeType,
-    setEdges 
+    setEdges,
+    nodes,
+    edges
   } = useFlowStore();
   const { 
     setSelectedFlowId,
@@ -217,11 +219,114 @@ export function DialogManager() {
   const handleSaveFlow = async (triggerConfig: any) => {
     alerts.loading('Guardando Flujo');
     try {
+      const triggerId = `trigger-${Date.now()}`;
+      
+      const triggerNode = {
+        id: triggerId,
+        type: 'triggerNode',
+        position: { x: 250, y: 50 },
+        data: {
+          id: triggerId.slice(0, 8),
+          label: 'Disparador',
+          trigger_type: triggerConfig.type,
+          trigger_config: triggerConfig,
+          status: 'published'
+        }
+      };
+
+      let finalNodes: any[];
+      let finalEdges: any[];
+
+      if (activeDialog === 'editFlow' && editingEntityId) {
+        const existingFlow = flows.find((f: any) => f.id === editingEntityId);
+        const existingNodes = existingFlow?.nodes || nodes;
+        const existingEdges = existingFlow?.edges || edges;
+        
+        const hasTrigger = existingNodes.some((n: any) => n.type === 'triggerNode');
+        
+        if (hasTrigger) {
+          finalNodes = existingNodes.map((n: any) => 
+            n.type === 'triggerNode' 
+              ? { ...n, data: { ...n.data, trigger_type: triggerConfig.type, trigger_config: triggerConfig } }
+              : n
+          );
+          finalEdges = existingEdges;
+        } else {
+          finalNodes = [triggerNode, ...existingNodes.map((n: any) => ({ ...n, position: { x: n.position?.x || 250, y: (n.position?.y || 150) + 150 } }))];
+          const firstNonTrigger = existingNodes.find((n: any) => n.type !== 'triggerNode');
+          if (firstNonTrigger) {
+            finalEdges = [
+              {
+                id: `e-${triggerId}-${firstNonTrigger.id}`,
+                source: triggerId,
+                target: firstNonTrigger.id,
+                animated: true,
+                style: { stroke: '#6366F1', strokeWidth: 2 }
+              },
+              ...existingEdges
+            ];
+          } else {
+            finalEdges = existingEdges;
+          }
+        }
+      } else if (pendingNodeType && activeDialog === 'createFlow') {
+        const contentId = `${pendingNodeType}-${Date.now() + 50}`;
+        
+        const contentNode = {
+          id: contentId,
+          type: pendingNodeType,
+          position: { x: 250, y: 250 },
+          data: pendingNodeType === 'messageNode' ? {
+            id: contentId.slice(0, 8),
+            label: 'Enviar Mensaje',
+            messages: [{ id: `m-${Date.now()}`, type: 'text', content: '' }],
+            buttons: [],
+            status: 'draft',
+          } : pendingNodeType === 'conditionNode' ? {
+            id: contentId.slice(0, 8),
+            label: 'Condición',
+            condition: '',
+            status: 'draft',
+          } : {
+            id: contentId.slice(0, 8),
+            label: 'Acción',
+            action: '',
+            status: 'draft',
+          }
+        };
+
+        const edge = {
+          id: `e-${triggerId}-${contentId}`,
+          source: triggerId,
+          target: contentId,
+          animated: true,
+          style: { stroke: '#6366F1', strokeWidth: 2 }
+        };
+
+        finalNodes = [triggerNode, contentNode];
+        finalEdges = [edge];
+
+        setNodes(finalNodes);
+        setEdges(finalEdges);
+        setPendingNodeType(null);
+      } else {
+        finalNodes = [triggerNode, ...nodes.map((n: any) => ({ ...n, position: { x: n.position?.x || 250, y: (n.position?.y || 150) + 150 } }))];
+        finalEdges = edges;
+      }
+
+      // Filter out trigger nodes - they are NOT saved as nodes in the database
+      const nodesWithoutTrigger = finalNodes.filter((n: any) => n.type !== 'triggerNode');
+      // Filter out edges that connect FROM trigger nodes
+      const triggerIds = finalNodes.filter((n: any) => n.type === 'triggerNode').map((n: any) => n.id);
+      const edgesWithoutTrigger = finalEdges.filter((e: any) => !triggerIds.includes(e.source));
+
       const payload = {
         name: flowName || 'Nuevo Flujo',
         trigger_type: triggerConfig.type,
         trigger_config: triggerConfig,
         status: 'draft' as any,
+        nodes: nodesWithoutTrigger,
+        edges: edgesWithoutTrigger,
       };
 
       let saved: any;
@@ -236,57 +341,9 @@ export function DialogManager() {
       if (newFlowId) {
         setSelectedFlowId(newFlowId);
         
-        // If it was a new flow creation triggered by adding a node to empty canvas
-        if (pendingNodeType && activeDialog === 'createFlow') {
-          const triggerId = `trigger-${Date.now()}`;
-          const contentId = `${pendingNodeType}-${Date.now() + 50}`;
-          
-          const triggerNode = {
-            id: triggerId,
-            type: 'triggerNode',
-            position: { x: 250, y: 50 },
-            data: {
-              id: triggerId.slice(0, 8),
-              label: 'Disparador',
-              trigger_type: triggerConfig.type,
-              status: 'published'
-            }
-          };
-
-          const contentNode = {
-            id: contentId,
-            type: pendingNodeType,
-            position: { x: 250, y: 250 },
-            data: pendingNodeType === 'messageNode' ? {
-              id: contentId.slice(0, 8),
-              label: 'Enviar Mensaje',
-              messages: [{ id: `m-${Date.now()}`, type: 'text', content: '' }],
-              buttons: [],
-              status: 'draft',
-            } : pendingNodeType === 'conditionNode' ? {
-              id: contentId.slice(0, 8),
-              label: 'Condición',
-              condition: '',
-              status: 'draft',
-            } : {
-              id: contentId.slice(0, 8),
-              label: 'Acción',
-              action: '',
-              status: 'draft',
-            }
-          };
-
-          const edge = {
-            id: `e-${triggerId}-${contentId}`,
-            source: triggerId,
-            target: contentId,
-            animated: true,
-            style: { stroke: '#6366F1', strokeWidth: 2 }
-          };
-
-          setNodes([triggerNode, contentNode]);
-          setEdges([edge]);
-          setPendingNodeType(null);
+        if (activeDialog === 'editFlow' && editingEntityId) {
+          setNodes(finalNodes);
+          setEdges(finalEdges);
         }
       }
 

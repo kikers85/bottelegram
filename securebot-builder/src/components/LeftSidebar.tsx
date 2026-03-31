@@ -1,4 +1,5 @@
 import { useAppStore } from '../store/useAppStore';
+import { useFlowStore } from '../store/useFlowStore';
 import { useBots } from '../hooks/queries/useBots';
 import { useAgents } from '../hooks/queries/useAgents';
 import { useTags } from '../hooks/queries/useTags';
@@ -86,18 +87,18 @@ function BotList() {
 }
 function FlowList() {
   const { selectedFlowId, setSelectedFlowId, setActiveDialog } = useAppStore();
-  const { flows, isLoading } = useFlows(); // Fetch all flows
+  const { flows, isLoading, deleteFlow } = useFlows();
 
   if (isLoading) return <div className="p-4 text-xs text-text-muted">Cargando flujos...</div>;
 
   return (
     <div className="space-y-2">
       {flows.map((flow: Flow) => (
-        <button 
+        <div 
           key={flow.id} 
           onClick={() => setSelectedFlowId(flow.id!)}
           className={cn(
-            "w-full p-3 rounded-xl border flex items-center gap-3 transition-all",
+            "w-full p-3 rounded-xl border flex items-center gap-3 transition-all cursor-pointer",
             selectedFlowId === flow.id 
               ? "bg-indigo-50 border-indigo-500 shadow-sm" 
               : "bg-white border-border-light hover:border-brand-300"
@@ -116,7 +117,28 @@ function FlowList() {
           <button onClick={(e) => { e.stopPropagation(); setActiveDialog('editFlow', flow.id); }} className="p-1.5 hover:bg-surface-hover rounded-lg">
             <Edit className="w-3.5 h-3.5 text-text-muted" />
           </button>
-        </button>
+          <button 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              alerts.confirm('Eliminar Flujo', `¿Estás seguro de eliminar "${flow.name}"?`).then((confirmed: boolean) => {
+                if (confirmed) {
+                  deleteFlow(flow.id!).then(() => {
+                    if (selectedFlowId === flow.id) {
+                      setSelectedFlowId(null);
+                    }
+                    alerts.success('Flujo Eliminado', 'El flujo ha sido eliminado correctamente.');
+                  }).catch((err: Error) => {
+                    console.error('Error deleting flow:', err);
+                    alerts.error('Error', 'No se pudo eliminar el flujo.');
+                  });
+                }
+              });
+            }} 
+            className="p-1.5 hover:bg-red-50 rounded-lg"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-red-500" />
+          </button>
+        </div>
       ))}
       <button 
         onClick={() => setActiveDialog('createFlow')}
@@ -287,11 +309,25 @@ export function LeftSidebar() {
     setIsSettingsOpen,
     setIsChannelConfigOpen,
     setShowTestChat,
-    showTestChat
+    showTestChat,
+    setSelectedFlowId
   } = useAppStore();
+  
+  const { setNodes, setEdges, setSelectedNodeId } = useFlowStore();
 
   const { bots } = useBots();
   const { channels: dbChannels } = useChannels();
+
+  const handleViewChange = (viewId: 'bots' | 'tags' | 'variables' | 'agents' | 'chat' | 'flows' | 'channels' | 'marketplace') => {
+    setCurrentView(viewId);
+    
+    if (viewId !== 'flows') {
+      setNodes([]);
+      setEdges([]);
+      setSelectedNodeId(null);
+      setSelectedFlowId(null);
+    }
+  };
 
   return (
     <div className={cn(
@@ -327,7 +363,7 @@ export function LeftSidebar() {
             return (
               <button
                 key={item.id}
-                onClick={() => setCurrentView(item.id)}
+                onClick={() => handleViewChange(item.id)}
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
                   isActive
